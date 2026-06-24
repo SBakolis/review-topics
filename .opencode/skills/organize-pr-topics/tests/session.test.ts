@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { SessionStore } from "../app/server/session";
 import type { ReviewComment, ReviewSession } from "../app/shared/schema";
 
@@ -97,5 +97,69 @@ describe("SessionStore", () => {
 
     const written = JSON.parse(await readFile(path, "utf8"));
     expect(written.comments).toEqual([]);
+  });
+
+  it("preserves every concurrent comment append", async () => {
+    const path = await writeSession(validSession());
+    const store = new SessionStore(path);
+    const comments = Array.from({ length: 50 }, (_, index): ReviewComment => ({
+      id: `comment-${index}`,
+      topicId: "topic-review-flow",
+      body: `Please review item ${index}.${"x".repeat(
+        index === 0 ? 5_000_000 : 0,
+      )}`,
+      kind: "topic",
+      postingStatus: "draft",
+    }));
+
+    await store.load();
+    await Promise.all(comments.map((comment) => store.addComment(comment)));
+
+    const written = JSON.parse(await readFile(path, "utf8"));
+    expect(written.comments.map((comment: ReviewComment) => comment.id)).toEqual(
+      comments.map((comment) => comment.id),
+    );
+  });
+});
+
+describe("review server routes", () => {
+  afterEach(() => {
+    delete process.env.PR_TOPIC_SESSION_PATH;
+  });
+
+  it("builds testable routes without requiring PR_TOPIC_SESSION_PATH or listening", async () => {
+    const { buildServer } = await import("../app/server/index");
+    const session = validSession();
+    const app = buildServer({
+      get: () => session,
+      addComment: async (comment: ReviewComment) => {
+        session.comments.push(comment);
+        return comment;
+      },
+    });
+
+    const response = await app.inject({ method: "GET", url: "/api/session" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual(session);
+  });
+
+  it("returns 400 for invalid comment payloads", async () => {
+    const { buildServer } = await import("../app/server/index");
+    const app = buildServer({
+      get: () => validSession(),
+      addComment: async (comment: ReviewComment) => comment,
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/comments",
+      payload: { topicId: "topic-review-flow", kind: "topic" },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      error: "Invalid comment payload",
+    });
   });
 });

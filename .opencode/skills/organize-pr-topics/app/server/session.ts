@@ -8,6 +8,7 @@ import {
 
 export class SessionStore {
   private session: ReviewSession | undefined;
+  private writeQueue = Promise.resolve();
 
   constructor(private readonly path: string) {}
 
@@ -27,9 +28,17 @@ export class SessionStore {
 
   async addComment(comment: ReviewComment) {
     const validComment = ReviewCommentSchema.parse(comment);
-    const session = this.get();
-    session.comments.push(validComment);
-    await writeFile(this.path, JSON.stringify(session, null, 2));
-    return validComment;
+    const operation = this.writeQueue.then(async () => {
+      const session = this.get();
+      session.comments.push(validComment);
+      await writeFile(this.path, JSON.stringify(session, null, 2));
+      return validComment;
+    });
+
+    this.writeQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
   }
 }
