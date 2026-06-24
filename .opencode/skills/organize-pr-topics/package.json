@@ -1,0 +1,31 @@
+{
+  "name": "organize-pr-topics-skill",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-gh": "node scripts/check-gh.mjs",
+    "prepare-session": "node scripts/prepare-session.mjs",
+    "dev": "tsx app/server/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "fastify": "latest",
+    "parse-diff": "latest",
+    "react": "latest",
+    "react-diff-view": "latest",
+    "react-dom": "latest",
+    "tsx": "latest",
+    "vite": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}
