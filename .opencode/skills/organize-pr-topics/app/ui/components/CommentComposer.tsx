@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 
 type Props = {
   topicId: string;
   path?: string;
   line?: number;
   side?: "LEFT" | "RIGHT";
+  onSaved?: () => void;
 };
 
 type SaveStatus = "idle" | "saving" | "saved" | "failed";
 
-export function CommentComposer({ topicId, path, line, side }: Props) {
+export function CommentComposer({ topicId, path, line, side, onSaved }: Props) {
   const [body, setBody] = useState("");
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const fieldId = useId();
 
   async function save() {
     setStatus("saving");
@@ -35,6 +37,7 @@ export function CommentComposer({ topicId, path, line, side }: Props) {
       }
       setBody("");
       setStatus("saved");
+      onSaved?.();
     } catch (saveError: unknown) {
       setError(saveError instanceof Error ? saveError.message : String(saveError));
       setStatus("failed");
@@ -44,10 +47,19 @@ export function CommentComposer({ topicId, path, line, side }: Props) {
   const disabled = !body.trim() || status === "saving";
   const buttonLabel =
     status === "saving" ? "Saving..." : status === "saved" ? "Saved" : "Save comment";
+  const labelText = line
+    ? `Comment on ${path}:${line} (${side ?? "RIGHT"})`
+    : path
+      ? `Comment on ${path}`
+      : "Topic comment";
 
   return (
     <div className="comment-composer">
+      <label className="composer-label" htmlFor={fieldId}>
+        {labelText}
+      </label>
       <textarea
+        id={fieldId}
         value={body}
         onChange={(event) => {
           setBody(event.target.value);
@@ -66,3 +78,4 @@ export function CommentComposer({ topicId, path, line, side }: Props) {
     </div>
   );
 }
+

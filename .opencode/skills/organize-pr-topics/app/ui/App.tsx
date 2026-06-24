@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ReviewSession, ReviewTopic } from "../shared/schema";
 import { TopicSidebar } from "./components/TopicSidebar";
 import { DiffReview } from "./components/DiffReview";
@@ -9,8 +9,7 @@ export function App() {
   const [topic, setTopic] = useState<ReviewTopic | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadSession = useCallback(() => {
     fetch("/api/session")
       .then((response) => {
         if (!response.ok) {
@@ -19,18 +18,23 @@ export function App() {
         return response.json();
       })
       .then((nextSession: ReviewSession) => {
-        if (cancelled) return;
         setSession(nextSession);
-        setTopic(nextSession.topics[0] ?? null);
+        setTopic((current) =>
+          current
+            ? (nextSession.topics.find((next) => next.id === current.id) ??
+              nextSession.topics[0] ??
+              null)
+            : (nextSession.topics[0] ?? null),
+        );
       })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        setError(error instanceof Error ? error.message : String(error));
+      .catch((loadError: unknown) => {
+        setError(loadError instanceof Error ? loadError.message : String(loadError));
       });
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    loadSession();
+  }, [loadSession]);
 
   if (error) {
     return <main className="loading">Failed to load session: {error}</main>;
@@ -60,7 +64,7 @@ export function App() {
         <section className="review-main">
           <h2>{topic.title}</h2>
           <p className="topic-summary">{topic.summary}</p>
-          <DiffReview session={session} topic={topic} />
+          <DiffReview session={session} topic={topic} onCommentSaved={loadSession} />
           <HandoffPanel />
         </section>
       </div>

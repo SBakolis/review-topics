@@ -14,11 +14,6 @@ export interface ReviewSessionStore {
   addComment(comment: ReviewComment): Promise<ReviewComment>;
 }
 
-export interface ReviewSessionStore {
-  get(): ReviewSession;
-  addComment(comment: ReviewComment): Promise<ReviewComment>;
-}
-
 export function buildServer(
   store: ReviewSessionStore,
   options: FastifyServerOptions = {},
@@ -109,7 +104,15 @@ async function registerUiHandler(app: ReturnType<typeof buildServer>) {
         }
       });
     });
+    return;
   }
+
+  const fastifyStatic = await import("@fastify/static");
+  const { resolve } = await import("node:path");
+  await app.register(fastifyStatic.default, {
+    root: resolve(new URL("../..", import.meta.url).pathname, "dist/ui"),
+    prefix: "/",
+  });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

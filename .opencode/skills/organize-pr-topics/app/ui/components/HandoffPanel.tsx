@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 
 export function HandoffPanel() {
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "failed">("idle");
   const [error, setError] = useState<string | null>(null);
+  const promptId = useId();
 
   async function loadPrompt() {
     setStatus("loading");
@@ -29,7 +30,15 @@ export function HandoffPanel() {
         {status === "loading" ? "Generating..." : "Generate agent fix prompt"}
       </button>
       {error ? <p className="comment-error">{error}</p> : null}
-      {prompt ? <textarea readOnly value={prompt} /> : null}
+      {prompt ? (
+        <>
+          <label className="composer-label" htmlFor={promptId}>
+            Agent fix prompt
+          </label>
+          <textarea id={promptId} readOnly value={prompt} />
+        </>
+      ) : null}
     </section>
   );
 }
+

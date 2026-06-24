@@ -134,12 +134,61 @@ a:hover {
 .file-diff {
   overflow: auto;
   margin: 0;
-  padding: 12px;
+  padding: 0;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 12px;
   line-height: 1.5;
   background: #ffffff;
+}
+
+.diff-row-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: 48px 16px 1fr;
+  align-items: baseline;
+  padding: 0 12px;
+  cursor: pointer;
   white-space: pre;
+}
+
+.diff-row:hover {
+  background: #f6f8fa;
+}
+
+.diff-row.selected {
+  background: #ddf4ff;
+}
+
+.diff-line-number {
+  color: #6e7781;
+  text-align: right;
+  padding-right: 8px;
+  user-select: none;
+}
+
+.diff-sign {
+  user-select: none;
+}
+
+.diff-sign-add {
+  color: #1a7f37;
+}
+
+.diff-sign-del {
+  color: #cf222e;
+}
+
+.diff-sign-context {
+  color: #6e7781;
+}
+
+.diff-content {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .file-diff-empty {
@@ -148,6 +197,13 @@ a:hover {
   color: #57606a;
   font-size: 13px;
 }
+
+.composer-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #57606a;
+}
+
 
 .comment-composer,
 .handoff-panel {
