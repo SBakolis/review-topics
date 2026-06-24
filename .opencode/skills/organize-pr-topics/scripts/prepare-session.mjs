@@ -2,73 +2,100 @@ import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { register } from "node:module";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { z } from "zod";
 
-register("tsx/esm", import.meta.url);
+const PrInfoSchema = z.object({
+  owner: z.string().min(1),
+  repo: z.string().min(1),
+  number: z.number().int().positive(),
+  title: z.string().min(1),
+  url: z.string().url(),
+  baseRefName: z.string().min(1),
+  headRefName: z.string().min(1),
+  headSha: z.string().min(1),
+});
 
-const { buildSessionFromGhPr } = await import("../app/server/gh.ts");
+const PrFileSchema = z.object({
+  path: z.string().min(1),
+  previousPath: z.string().min(1).optional(),
+  status: z.string().min(1),
+  additions: z.number().int().nonnegative(),
+  deletions: z.number().int().nonnegative(),
+});
+
+const ReviewTopicSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  summary: z.string().min(1),
+  rationale: z.string().min(1),
+  files: z.array(z.string().min(1)).min(1),
+});
+
+const ReviewCommentSchema = z.object({
+  id: z.string().min(1),
+  topicId: z.string().min(1),
+  body: z.string().min(1),
+  path: z.string().min(1).optional(),
+  line: z.number().int().positive().optional(),
+  side: z.enum(["LEFT", "RIGHT"]).optional(),
+  kind: z.enum(["inline", "topic"]),
+  postingStatus: z.enum(["draft", "posting", "posted", "failed"]),
+  error: z.string().optional(),
+  githubUrl: z.string().url().optional(),
+});
+
+const ReviewSessionSchema = z.object({
+  pr: PrInfoSchema,
+  files: z.array(PrFileSchema),
+  diff: z.string(),
+  topics: z.array(ReviewTopicSchema).min(1),
+  comments: z.array(ReviewCommentSchema),
+});
 
 function gh(args) {
   return execFileSync("gh", args, { encoding: "utf8" }).trim();
 }
 
-function assertNonEmptyString(value, field) {
-  if (typeof value !== "string" || value.trim() === "") {
-    throw new Error(`Prepared session is missing required field: ${field}`);
+export function validatePreparedSession(session) {
+  const result = ReviewSessionSchema.safeParse(session);
+
+  if (!result.success) {
+    const details = result.error.issues
+      .map((issue) => `${issue.path.join(".") || "session"}: ${issue.message}`)
+      .join("; ");
+
+    throw new Error(`Invalid prepared session: ${details}`);
   }
+
+  return result.data;
 }
 
-function validateSession(session) {
-  assertNonEmptyString(session?.pr?.owner, "pr.owner");
-  assertNonEmptyString(session?.pr?.repo, "pr.repo");
-  assertNonEmptyString(session?.pr?.title, "pr.title");
-  assertNonEmptyString(session?.pr?.url, "pr.url");
-  assertNonEmptyString(session?.pr?.baseRefName, "pr.baseRefName");
-  assertNonEmptyString(session?.pr?.headRefName, "pr.headRefName");
-  assertNonEmptyString(session?.pr?.headSha, "pr.headSha");
+export async function main(argv = process.argv) {
+  register("tsx/esm", import.meta.url);
+  const { buildSessionFromGhPr } = await import("../app/server/gh.ts");
+  const pr = JSON.parse(
+    gh([
+      "pr",
+      "view",
+      "--json",
+      "number,title,url,baseRefName,headRefName,headRefOid,files,headRepositoryOwner,headRepository",
+    ]),
+  );
+  const diff = gh(["pr", "diff", "--patch"]);
+  const session = validatePreparedSession(buildSessionFromGhPr(pr, diff));
 
-  if (!Number.isInteger(session?.pr?.number) || session.pr.number <= 0) {
-    throw new Error("Prepared session is missing required field: pr.number");
-  }
+  const scriptDir = dirname(fileURLToPath(import.meta.url));
+  const skillDir = dirname(scriptDir);
+  const outputPath = argv[2] ? resolve(argv[2]) : resolve(skillDir, "session.json");
 
-  if (!Array.isArray(session.files)) {
-    throw new Error("Prepared session is missing required field: files");
-  }
-
-  for (const [index, file] of session.files.entries()) {
-    assertNonEmptyString(file?.path, `files[${index}].path`);
-  }
-
-  if (!Array.isArray(session.topics) || session.topics.length === 0) {
-    throw new Error("Prepared session is missing required field: topics");
-  }
-
-  for (const [topicIndex, topic] of session.topics.entries()) {
-    if (!Array.isArray(topic?.files) || topic.files.length === 0) {
-      throw new Error(`Prepared session topic has no files: topics[${topicIndex}].files`);
-    }
-
-    for (const [fileIndex, filePath] of topic.files.entries()) {
-      assertNonEmptyString(filePath, `topics[${topicIndex}].files[${fileIndex}]`);
-    }
-  }
+  writeFileSync(outputPath, JSON.stringify(session, null, 2));
+  console.log(outputPath);
 }
 
-const pr = JSON.parse(
-  gh([
-    "pr",
-    "view",
-    "--json",
-    "number,title,url,baseRefName,headRefName,headRefOid,files,headRepositoryOwner,headRepository",
-  ]),
-);
-const diff = gh(["pr", "diff", "--patch"]);
-const session = buildSessionFromGhPr(pr, diff);
-validateSession(session);
-
-const scriptDir = dirname(fileURLToPath(import.meta.url));
-const skillDir = dirname(scriptDir);
-const outputPath = process.argv[2] ? resolve(process.argv[2]) : resolve(skillDir, "session.json");
-
-writeFileSync(outputPath, JSON.stringify(session, null, 2));
-console.log(outputPath);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}

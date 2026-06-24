@@ -82,3 +82,38 @@ describe("buildSessionFromGhPr", () => {
     ).toThrow("GitHub PR JSON is missing head repository owner or name.");
   });
 });
+
+describe("prepare-session validation", () => {
+  it("rejects malformed URLs and missing file change counts", async () => {
+    const scriptPath = "../scripts/prepare-session.mjs";
+    const { validatePreparedSession } = (await import(scriptPath)) as {
+      validatePreparedSession: (session: unknown) => unknown;
+    };
+    const session = {
+      pr: {
+        owner: "octo",
+        repo: "example",
+        number: 42,
+        title: "Add topic review flow",
+        url: "not-a-url",
+        baseRefName: "main",
+        headRefName: "topic-review",
+        headSha: "abc123",
+      },
+      files: [{ path: "src/app.ts", status: "modified", deletions: 3 }],
+      diff: "diff --git a/src/app.ts b/src/app.ts",
+      topics: [
+        {
+          id: "review-topic-1",
+          title: "PR changes",
+          summary: "Fallback topic.",
+          rationale: "Fallback topic created by the session script.",
+          files: ["src/app.ts"],
+        },
+      ],
+      comments: [],
+    };
+
+    expect(() => validatePreparedSession(session)).toThrow(/Invalid prepared session/);
+  });
+});
