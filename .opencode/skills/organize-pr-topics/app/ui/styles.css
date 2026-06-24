@@ -1,0 +1,218 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: #24292f;
+  background: #f6f8fa;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+    Arial, sans-serif;
+  line-height: 1.5;
+}
+
+a {
+  color: #0969da;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.loading {
+  padding: 48px 24px;
+  font-size: 16px;
+  color: #57606a;
+}
+
+.app-header {
+  background: #ffffff;
+  border-bottom: 1px solid #d0d7de;
+  padding: 16px 24px;
+}
+
+.app-header h1 {
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.review-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: calc(100vh - 73px);
+}
+
+.topic-sidebar {
+  background: #ffffff;
+  border-right: 1px solid #d0d7de;
+  padding: 16px;
+}
+
+.topic-sidebar h2 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #57606a;
+  margin: 0 0 12px;
+}
+
+.topic-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 12px;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.topic-item:hover {
+  background: #f6f8fa;
+}
+
+.topic-item.selected {
+  border-color: #0969da;
+  box-shadow: inset 3px 0 0 #0969da;
+}
+
+.topic-title {
+  font-size: 14px;
+}
+
+.topic-meta {
+  font-size: 12px;
+  color: #57606a;
+}
+
+.review-main {
+  padding: 24px;
+  min-width: 0;
+}
+
+.review-main h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.topic-summary {
+  margin: 0 0 16px;
+  color: #57606a;
+}
+
+.diff-review {
+  display: block;
+}
+
+.file-card {
+  margin: 16px 0;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+}
+
+.file-card-header {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  background: #f6f8fa;
+  border-bottom: 1px solid #d0d7de;
+  word-break: break-all;
+}
+
+.file-diff {
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  background: #ffffff;
+  white-space: pre;
+}
+
+.file-diff-empty {
+  margin: 0;
+  padding: 12px;
+  color: #57606a;
+  font-size: 13px;
+}
+
+.comment-composer,
+.handoff-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #d0d7de;
+  background: #f6f8fa;
+}
+
+.handoff-panel {
+  margin-top: 24px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.handoff-panel h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 96px;
+  font: inherit;
+  padding: 8px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #24292f;
+  resize: vertical;
+}
+
+textarea[readOnly] {
+  background: #f6f8fa;
+  color: #24292f;
+}
+
+button {
+  font: inherit;
+  padding: 6px 14px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #24292f;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+button:disabled {
+  color: #8c959f;
+  cursor: not-allowed;
+}
+
+.comment-composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.comment-error {
+  color: #cf222e;
+  font-size: 12px;
+}

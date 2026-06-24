@@ -14,6 +14,11 @@ export interface ReviewSessionStore {
   addComment(comment: ReviewComment): Promise<ReviewComment>;
 }
 
+export interface ReviewSessionStore {
+  get(): ReviewSession;
+  addComment(comment: ReviewComment): Promise<ReviewComment>;
+}
+
 export function buildServer(
   store: ReviewSessionStore,
   options: FastifyServerOptions = {},
@@ -76,8 +81,35 @@ export async function startServer() {
   await store.load();
 
   const app = buildServer(store, { logger: true });
+  await registerUiHandler(app);
+
   const port = Number(process.env.PORT ?? 4173);
   await app.listen({ port, host: "127.0.0.1" });
+}
+
+async function registerUiHandler(app: ReturnType<typeof buildServer>) {
+  const isDev = process.env.NODE_ENV !== "production";
+
+  if (isDev) {
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({
+      root: new URL("../ui", import.meta.url).pathname,
+      server: { middlewareMode: true },
+    });
+
+    app.get("/*", async (request, reply) => {
+      if (request.url.startsWith("/api/")) {
+        return reply.status(404).send({ error: "Not found" });
+      }
+      reply.hijack();
+      vite.middlewares(request.raw, reply.raw, () => {
+        if (!reply.raw.headersSent) {
+          reply.raw.statusCode = 404;
+          reply.raw.end("Not found");
+        }
+      });
+    });
+  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
