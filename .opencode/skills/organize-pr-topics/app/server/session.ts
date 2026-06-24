@@ -41,4 +41,27 @@ export class SessionStore {
     );
     return operation;
   }
+
+  async updateComment(id: string, updates: Partial<ReviewComment>) {
+    const operation = this.writeQueue.then(async () => {
+      const session = this.get();
+      const index = session.comments.findIndex((comment) => comment.id === id);
+      if (index === -1) {
+        throw new Error(`Comment not found: ${id}`);
+      }
+      const merged = ReviewCommentSchema.parse({
+        ...session.comments[index],
+        ...updates,
+      });
+      session.comments[index] = merged;
+      await writeFile(this.path, JSON.stringify(session, null, 2));
+      return merged;
+    });
+
+    this.writeQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
+  }
 }

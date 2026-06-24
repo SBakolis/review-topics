@@ -136,6 +136,8 @@ describe("review server routes", () => {
         session.comments.push(comment);
         return comment;
       },
+      updateComment: async (_id: string, updates: Partial<ReviewComment>) =>
+        updates as ReviewComment,
     });
 
     const response = await app.inject({ method: "GET", url: "/api/session" });
@@ -149,6 +151,8 @@ describe("review server routes", () => {
     const app = buildServer({
       get: () => validSession(),
       addComment: async (comment: ReviewComment) => comment,
+      updateComment: async (_id: string, updates: Partial<ReviewComment>) =>
+        updates as ReviewComment,
     });
 
     const response = await app.inject({
