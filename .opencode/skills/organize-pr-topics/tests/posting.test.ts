@@ -6,9 +6,7 @@ import {
   postInlineComment,
   postPrLevelComment,
   type GhRunner,
-} from "../app/server/comments";
-
-function validSession(overrides: Partial<ReviewSession> = {}): ReviewSession {
+} from "../app/server/comments";function validSession(overrides: Partial<ReviewSession> = {}): ReviewSession {
   return {
     pr: {
       owner: "octo",
@@ -19,6 +17,7 @@ function validSession(overrides: Partial<ReviewSession> = {}): ReviewSession {
       baseRefName: "main",
       headRefName: "feature",
       headSha: "abc123",
+      baseSha: "base456",
     },
     files: [{ path: "src/app.ts", status: "modified", additions: 3, deletions: 1 }],
     diff: "diff --git a/src/app.ts b/src/app.ts",
@@ -291,5 +290,174 @@ describe("POST /api/comments/post-all", () => {
     expect(body.skipped).toBe(1);
     expect(postInline).not.toHaveBeenCalled();
     expect(postPr).not.toHaveBeenCalled();
+  });
+
+  it("uses baseSha as commit_id for left-side inline comments", async () => {
+    const { buildServer } = await import("../app/server/index");
+    const leftComment: ReviewComment = {
+      id: "c-left",
+      topicId: "topic-review-flow",
+      body: "Removed line issue.",
+      path: "src/app.ts",
+      line: 10,
+      side: "LEFT",
+      kind: "inline",
+      postingStatus: "draft",
+    };
+    const rightComment: ReviewComment = {
+      id: "c-right",
+      topicId: "topic-review-flow",
+      body: "Added line issue.",
+      path: "src/app.ts",
+      line: 20,
+      side: "RIGHT",
+      kind: "inline",
+      postingStatus: "draft",
+    };
+    const session = validSession({ comments: [leftComment, rightComment] });
+
+    const store = {
+      get: () => session,
+      addComment: vi.fn(),
+      updateComment: vi.fn(async (id: string, updates: Partial<ReviewComment>) => {
+        const idx = session.comments.findIndex((c) => c.id === id);
+        if (idx >= 0) session.comments[idx] = { ...session.comments[idx], ...updates };
+        return session.comments[idx];
+      }),
+    };
+
+    const postInline = vi.fn().mockResolvedValue({
+      id: 1,
+      html_url: "https://github.com/octo/example/pull/12#discussion_r1",
+    });
+    const postPr = vi.fn();
+
+    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr });
+
+    const response = await app.inject({ method: "POST", url: "/api/comments/post-all" });
+
+    expect(response.statusCode).toBe(200);
+    expect(postInline).toHaveBeenCalledTimes(2);
+    expect(postInline).toHaveBeenNthCalledWith(1, "octo", "example", 12, {
+      body: "Removed line issue.",
+      commitId: "base456",
+      path: "src/app.ts",
+      line: 10,
+      side: "LEFT",
+    });
+    expect(postInline).toHaveBeenNthCalledWith(2, "octo", "example", 12, {
+      body: "Added line issue.",
+      commitId: "abc123",
+      path: "src/app.ts",
+      line: 20,
+      side: "RIGHT",
+    });
+  });
+
+  it("handles mixed success and failure in a batch independently", async () => {
+    const { buildServer } = await import("../app/server/index");
+    const ok: ReviewComment = {
+      id: "ok",
+      topicId: "topic-review-flow",
+      body: "ok",
+      kind: "topic",
+      postingStatus: "draft",
+    };
+    const boom: ReviewComment = {
+      id: "boom",
+      topicId: "topic-review-flow",
+      body: "boom",
+      kind: "topic",
+      postingStatus: "draft",
+    };
+    const session = validSession({ comments: [ok, boom] });
+
+    const updated: Record<string, Partial<ReviewComment>> = {};
+    const store = {
+      get: () => session,
+      addComment: vi.fn(),
+      updateComment: vi.fn(async (id: string, updates: Partial<ReviewComment>) => {
+        updated[id] = updates;
+        const idx = session.comments.findIndex((c) => c.id === id);
+        if (idx >= 0) session.comments[idx] = { ...session.comments[idx], ...updates };
+        return session.comments[idx];
+      }),
+    };
+
+    const postInline = vi.fn();
+    const postPr = vi
+      .fn()
+      .mockResolvedValueOnce({ html_url: "https://github.com/octo/example/issues/12#c1" })
+      .mockRejectedValueOnce(new Error("500 Server Error"));
+
+    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr });
+
+    const response = await app.inject({ method: "POST", url: "/api/comments/post-all" });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.posted).toBe(1);
+    expect(body.failed).toBe(1);
+    expect(body.skipped).toBe(0);
+    expect(body.results).toHaveLength(2);
+    expect(updated["ok"]).toMatchObject({
+      postingStatus: "posted",
+      githubUrl: "https://github.com/octo/example/issues/12#c1",
+    });
+    expect(updated["boom"]).toMatchObject({
+      postingStatus: "failed",
+      error: "500 Server Error",
+    });
+  });
+
+  it("returns 409 when a post-all batch is already in flight", async () => {
+    const { buildServer, PostAllGuard } = await import("../app/server/index");
+    const c1: ReviewComment = {
+      id: "c1",
+      topicId: "topic-review-flow",
+      body: "first",
+      kind: "topic",
+      postingStatus: "draft",
+    };
+    const session = validSession({ comments: [c1] });
+
+    const store = {
+      get: () => session,
+      addComment: vi.fn(),
+      updateComment: vi.fn(async (id: string, updates: Partial<ReviewComment>) => {
+        const idx = session.comments.findIndex((c) => c.id === id);
+        if (idx >= 0) session.comments[idx] = { ...session.comments[idx], ...updates };
+        return session.comments[idx];
+      }),
+    };
+
+    const postPr = vi.fn().mockResolvedValue({
+      html_url: "https://github.com/octo/example/issues/12#c1",
+    });
+    const guard = new PostAllGuard();
+    guard.tryAcquire();
+    expect(guard.isLocked).toBe(true);
+
+    const app = buildServer(
+      store,
+      {},
+      { postInlineComment: vi.fn(), postPrLevelComment: postPr },
+      guard,
+    );
+
+    const response = await app.inject({ method: "POST", url: "/api/comments/post-all" });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({ error: "post-all already in progress" });
+    expect(postPr).not.toHaveBeenCalled();
+    expect(guard.isLocked).toBe(true);
+
+    guard.release();
+    expect(guard.isLocked).toBe(false);
+
+    const okResponse = await app.inject({ method: "POST", url: "/api/comments/post-all" });
+    expect(okResponse.statusCode).toBe(200);
+    const body = okResponse.json();
+    expect(body.posted).toBe(1);
   });
 });

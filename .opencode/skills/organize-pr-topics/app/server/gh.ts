@@ -18,6 +18,7 @@ export type GhPr = {
   url: string;
   baseRefName: string;
   headRefName: string;
+  baseRefOid?: string;
   headRefOid: string;
   files: GhPrFile[];
   headRepositoryOwner?: { login?: string };
@@ -34,7 +35,7 @@ export async function getCurrentPr() {
     "pr",
     "view",
     "--json",
-    "number,title,url,baseRefName,headRefName,headRefOid,files,headRepositoryOwner,headRepository",
+    "number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
   ]);
   return JSON.parse(output) as GhPr;
 }
@@ -49,6 +50,10 @@ export function buildSessionFromGhPr(pr: GhPr, diff: string): ReviewSession {
 
   if (!owner || !repo) {
     throw new Error("GitHub PR JSON is missing head repository owner or name.");
+  }
+
+  if (!pr.baseRefOid) {
+    throw new Error("GitHub PR JSON is missing baseRefOid.");
   }
 
   const files = pr.files.map((file): PrFile => {
@@ -75,6 +80,7 @@ export function buildSessionFromGhPr(pr: GhPr, diff: string): ReviewSession {
       url: pr.url,
       baseRefName: pr.baseRefName,
       headRefName: pr.headRefName,
+      baseSha: pr.baseRefOid,
       headSha: pr.headRefOid,
     },
     files,

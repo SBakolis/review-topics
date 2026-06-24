@@ -26,10 +26,31 @@ export interface PostingAdapters {
   postPrLevelComment: typeof postPrLevelComment;
 }
 
+export class PostAllGuard {
+  private inFlight = false;
+
+  tryAcquire(): boolean {
+    if (this.inFlight) {
+      return false;
+    }
+    this.inFlight = true;
+    return true;
+  }
+
+  release(): void {
+    this.inFlight = false;
+  }
+
+  get isLocked(): boolean {
+    return this.inFlight;
+  }
+}
+
 export function buildServer(
   store: ReviewSessionStore,
   options: FastifyServerOptions = {},
   adapters: PostingAdapters = { postInlineComment, postPrLevelComment },
+  guard: PostAllGuard = new PostAllGuard(),
 ) {
   const app = Fastify(options);
 
@@ -61,79 +82,88 @@ export function buildServer(
     }
   });
 
-  app.post("/api/comments/post-all", async () => {
-    const session = store.get();
-    const { pr, topics } = session;
-    const topicById = new Map(topics.map((topic) => [topic.id, topic]));
-
-    const results: Array<{
-      id: string;
-      status: "posted" | "failed" | "skipped";
-      githubUrl?: string;
-      error?: string;
-    }> = [];
-    let posted = 0;
-    let failed = 0;
-    let skipped = 0;
-
-    for (const comment of session.comments) {
-      if (comment.postingStatus === "posted" || comment.postingStatus === "failed") {
-        skipped += 1;
-        results.push({ id: comment.id, status: "skipped" });
-        continue;
-      }
-
-      try {
-        let githubUrl: string | undefined;
-
-        if (comment.path && comment.line && comment.side) {
-          const inlinePayload: InlineCommentInput = {
-            body: comment.body,
-            commitId: pr.headSha,
-            path: comment.path,
-            line: comment.line,
-            side: comment.side,
-          };
-          const response = await adapters.postInlineComment(
-            pr.owner,
-            pr.repo,
-            pr.number,
-            inlinePayload,
-          );
-          githubUrl = response.html_url;
-        } else {
-          const topic = comment.topicId ? topicById.get(comment.topicId) : undefined;
-          const body = topic
-            ? buildTopicCommentBody(topic.title, comment.body)
-            : comment.body;
-          const response = await adapters.postPrLevelComment(
-            pr.owner,
-            pr.repo,
-            pr.number,
-            body,
-          );
-          githubUrl = response.html_url;
-        }
-
-        await store.updateComment(comment.id, {
-          postingStatus: "posted",
-          githubUrl,
-          error: undefined,
-        });
-        posted += 1;
-        results.push({ id: comment.id, status: "posted", githubUrl });
-      } catch (postError: unknown) {
-        const message = postError instanceof Error ? postError.message : String(postError);
-        await store.updateComment(comment.id, {
-          postingStatus: "failed",
-          error: message,
-        });
-        failed += 1;
-        results.push({ id: comment.id, status: "failed", error: message });
-      }
+  app.post("/api/comments/post-all", async (_request, reply) => {
+    if (!guard.tryAcquire()) {
+      return reply.status(409).send({ error: "post-all already in progress" });
     }
 
-    return { posted, failed, skipped, results };
+    try {
+      const session = store.get();
+      const { pr, topics } = session;
+      const topicById = new Map(topics.map((topic) => [topic.id, topic]));
+
+      const results: Array<{
+        id: string;
+        status: "posted" | "failed" | "skipped";
+        githubUrl?: string;
+        error?: string;
+      }> = [];
+      let posted = 0;
+      let failed = 0;
+      let skipped = 0;
+
+      for (const comment of session.comments) {
+        if (comment.postingStatus === "posted" || comment.postingStatus === "failed") {
+          skipped += 1;
+          results.push({ id: comment.id, status: "skipped" });
+          continue;
+        }
+
+        try {
+          let githubUrl: string | undefined;
+
+          if (comment.path && comment.line && comment.side) {
+            const commitId = comment.side === "LEFT" ? pr.baseSha : pr.headSha;
+            const inlinePayload: InlineCommentInput = {
+              body: comment.body,
+              commitId,
+              path: comment.path,
+              line: comment.line,
+              side: comment.side,
+            };
+            const response = await adapters.postInlineComment(
+              pr.owner,
+              pr.repo,
+              pr.number,
+              inlinePayload,
+            );
+            githubUrl = response.html_url;
+          } else {
+            const topic = comment.topicId ? topicById.get(comment.topicId) : undefined;
+            const body = topic
+              ? buildTopicCommentBody(topic.title, comment.body)
+              : comment.body;
+            const response = await adapters.postPrLevelComment(
+              pr.owner,
+              pr.repo,
+              pr.number,
+              body,
+            );
+            githubUrl = response.html_url;
+          }
+
+          await store.updateComment(comment.id, {
+            postingStatus: "posted",
+            githubUrl,
+            error: undefined,
+          });
+          posted += 1;
+          results.push({ id: comment.id, status: "posted", githubUrl });
+        } catch (postError: unknown) {
+          const message = postError instanceof Error ? postError.message : String(postError);
+          await store.updateComment(comment.id, {
+            postingStatus: "failed",
+            error: message,
+          });
+          failed += 1;
+          results.push({ id: comment.id, status: "failed", error: message });
+        }
+      }
+
+      return { posted, failed, skipped, results };
+    } finally {
+      guard.release();
+    }
   });
 
   app.get("/api/handoff", async () => {

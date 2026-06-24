@@ -12,6 +12,7 @@ describe("ReviewSessionSchema", () => {
         url: "https://github.com/octo/example/pull/12",
         baseRefName: "main",
         headRefName: "feature",
+        baseSha: "base456",
         headSha: "abc123",
       },
       files: [
@@ -44,6 +45,7 @@ describe("ReviewSessionSchema", () => {
           url: "https://github.com/octo/example/pull/12",
           baseRefName: "main",
           headRefName: "feature",
+          baseSha: "base456",
           headSha: "abc123",
         },
         files: [],

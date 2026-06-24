@@ -1,7 +1,4 @@
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
-const execFileAsync = promisify(execFile);
 
 export type InlineCommentInput = {
   body: string;
@@ -27,10 +24,16 @@ export function buildTopicCommentBody(topicTitle: string, body: string) {
   return `**${topicTitle}**\n\n${body}`;
 }
 
-const defaultRunner: GhRunner = async (args) => {
-  const { stdout } = await execFileAsync("gh", args, { encoding: "utf8" });
-  return stdout.trim();
-};
+export const defaultRunner: GhRunner = (args) =>
+  new Promise((resolve, reject) => {
+    execFile("gh", args, { encoding: "utf8" }, (error, stdout) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(stdout.trim());
+    });
+  });
 
 export async function postPrLevelComment(
   owner: string,

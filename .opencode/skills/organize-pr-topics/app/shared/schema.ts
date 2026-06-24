@@ -8,6 +8,7 @@ export const PrInfoSchema = z.object({
   url: z.string().url(),
   baseRefName: z.string().min(1),
   headRefName: z.string().min(1),
+  baseSha: z.string().min(1),
   headSha: z.string().min(1),
 });
 

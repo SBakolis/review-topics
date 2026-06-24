@@ -13,6 +13,7 @@ const PrInfoSchema = z.object({
   url: z.string().url(),
   baseRefName: z.string().min(1),
   headRefName: z.string().min(1),
+  baseSha: z.string().min(1),
   headSha: z.string().min(1),
 });
 
@@ -79,7 +80,7 @@ export async function main(argv = process.argv) {
       "pr",
       "view",
       "--json",
-      "number,title,url,baseRefName,headRefName,headRefOid,files,headRepositoryOwner,headRepository",
+      "number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
     ]),
   );
   const diff = gh(["pr", "diff", "--patch"]);
