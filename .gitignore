@@ -1,0 +1,4 @@
+node_modules/
+.opencode/skills/organize-pr-topics/node_modules/
+.opencode/skills/organize-pr-topics/dist/
+.opencode/skills/organize-pr-topics/session.json
