@@ -1,6 +1,8 @@
 import Fastify, { type FastifyServerOptions } from "fastify";
 import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { ZodError } from "zod";
 import {
   ReviewCommentSchema,
@@ -14,6 +16,32 @@ import {
   postPrLevelComment,
   type InlineCommentInput,
 } from "./comments";
+
+const FALLBACK_HANDOFF_PROMPT = `Please fix the review comments posted for {PR_URL}.\n\n{COMMENTS}`;
+const SKILL_DIR = resolve(new URL("../..", import.meta.url).pathname);
+
+async function loadHandoffTemplate(): Promise<string | null> {
+  const templatePath = resolve(SKILL_DIR, "templates/fix-comments-prompt.md");
+  try {
+    return await readFile(templatePath, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+async function buildHandoffPrompt(
+  session: ReviewSession,
+  commentsList: string,
+): Promise<string> {
+  const template = await loadHandoffTemplate();
+  if (template) {
+    return `${template}\n\nPR: ${session.pr.url}\n\n## Comments\n\n${commentsList}`;
+  }
+  return FALLBACK_HANDOFF_PROMPT.replace("{PR_URL}", session.pr.url).replace(
+    "{COMMENTS}",
+    commentsList,
+  );
+}
 
 export interface ReviewSessionStore {
   get(): ReviewSession;
@@ -175,9 +203,9 @@ export function buildServer(
       )
       .join("\n");
 
-    return {
-      prompt: `Please fix the review comments posted for ${session.pr.url}.\n\n${comments}`,
-    };
+    const prompt = await buildHandoffPrompt(session, comments);
+
+    return { prompt };
   });
 
   return app;

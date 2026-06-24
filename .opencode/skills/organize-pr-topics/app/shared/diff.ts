@@ -1,10 +1,13 @@
 export type DiffSide = "LEFT" | "RIGHT";
 
+export type DiffRowType = "add" | "del" | "context";
+
 export type DiffCommentTarget = {
   path: string;
   line: number;
   side: DiffSide;
   content: string;
+  type: DiffRowType;
 };
 
 export function mapUnifiedDiff(diff: string): DiffCommentTarget[] {
@@ -34,19 +37,19 @@ export function mapUnifiedDiff(diff: string): DiffCommentTarget[] {
     }
 
     if (line.startsWith("+")) {
-      rows.push({ path: currentPath, line: newLine, side: "RIGHT", content: line.slice(1) });
+      rows.push({ path: currentPath, line: newLine, side: "RIGHT", content: line.slice(1), type: "add" });
       newLine += 1;
       continue;
     }
 
     if (line.startsWith("-")) {
-      rows.push({ path: currentPath, line: oldLine, side: "LEFT", content: line.slice(1) });
+      rows.push({ path: currentPath, line: oldLine, side: "LEFT", content: line.slice(1), type: "del" });
       oldLine += 1;
       continue;
     }
 
     if (line.startsWith(" ")) {
-      rows.push({ path: currentPath, line: newLine, side: "RIGHT", content: line.slice(1) });
+      rows.push({ path: currentPath, line: newLine, side: "RIGHT", content: line.slice(1), type: "context" });
       oldLine += 1;
       newLine += 1;
     }

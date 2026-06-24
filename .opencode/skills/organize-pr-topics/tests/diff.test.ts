@@ -53,4 +53,47 @@ describe("mapUnifiedDiff", () => {
       expect.objectContaining({ path: "src/a.ts", line: 11, side: "RIGHT", content: "const k = 11;" }),
     );
   });
+
+  it("tags added lines with type 'add'", () => {
+    const rows = mapUnifiedDiff(`diff --git a/src/a.ts b/src/a.ts
+--- a/src/a.ts
++++ b/src/a.ts
+@@ -1,1 +1,2 @@
+ const a = 1;
++const b = 2;
+`);
+
+    expect(rows).toContainEqual(
+      expect.objectContaining({ type: "add", content: "const b = 2;", side: "RIGHT" }),
+    );
+  });
+
+  it("tags removed lines with type 'del'", () => {
+    const rows = mapUnifiedDiff(`diff --git a/src/a.ts b/src/a.ts
+--- a/src/a.ts
++++ b/src/a.ts
+@@ -1,2 +1,1 @@
+ const a = 1;
+-const b = 2;
+`);
+
+    expect(rows).toContainEqual(
+      expect.objectContaining({ type: "del", content: "const b = 2;", side: "LEFT" }),
+    );
+  });
+
+  it("tags context lines with type 'context'", () => {
+    const rows = mapUnifiedDiff(`diff --git a/src/a.ts b/src/a.ts
+--- a/src/a.ts
++++ b/src/a.ts
+@@ -1,2 +1,2 @@
+ const a = 1;
+-const b = 2;
++const b = 3;
+`);
+
+    expect(rows).toContainEqual(
+      expect.objectContaining({ type: "context", content: "const a = 1;" }),
+    );
+  });
 });
