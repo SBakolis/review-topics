@@ -64,4 +64,21 @@ describe("buildSessionFromGhPr", () => {
       comments: [],
     });
   });
+
+  it("rejects PR JSON without repository owner or name", () => {
+    expect(() =>
+      buildSessionFromGhPr(
+        {
+          number: 42,
+          title: "Add topic review flow",
+          url: "https://github.com/octo/example/pull/42",
+          baseRefName: "main",
+          headRefName: "topic-review",
+          headRefOid: "abc123",
+          files: [{ path: "src/app.ts", status: "MODIFIED", additions: 12, deletions: 3 }],
+        },
+        "diff --git a/src/app.ts b/src/app.ts",
+      ),
+    ).toThrow("GitHub PR JSON is missing head repository owner or name.");
+  });
 });

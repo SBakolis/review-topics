@@ -44,6 +44,13 @@ export async function getCurrentPrDiff() {
 }
 
 export function buildSessionFromGhPr(pr: GhPr, diff: string): ReviewSession {
+  const owner = pr.headRepositoryOwner?.login;
+  const repo = pr.headRepository?.name;
+
+  if (!owner || !repo) {
+    throw new Error("GitHub PR JSON is missing head repository owner or name.");
+  }
+
   const files = pr.files.map((file): PrFile => {
     const normalized: PrFile = {
       path: file.path,
@@ -61,8 +68,8 @@ export function buildSessionFromGhPr(pr: GhPr, diff: string): ReviewSession {
 
   return {
     pr: {
-      owner: pr.headRepositoryOwner?.login ?? "",
-      repo: pr.headRepository?.name ?? "",
+      owner,
+      repo,
       number: pr.number,
       title: pr.title,
       url: pr.url,
