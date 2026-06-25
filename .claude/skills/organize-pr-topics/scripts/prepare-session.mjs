@@ -53,8 +53,61 @@ const ReviewSessionSchema = z.object({
   comments: z.array(ReviewCommentSchema),
 });
 
+const PR_JSON_FIELDS =
+  "number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository";
+
 function gh(args) {
   return execFileSync("gh", args, { encoding: "utf8" }).trim();
+}
+
+export function parsePrepareSessionArgs(argv = process.argv) {
+  const parsed = {};
+
+  for (let index = 2; index < argv.length; index += 1) {
+    const arg = argv[index];
+
+    if (arg === "--output") {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error("Missing value for --output");
+      }
+      parsed.outputPath = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--pr") {
+      const value = argv[index + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error("Missing value for --pr");
+      }
+      parsed.prSelector = value;
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--")) {
+      throw new Error(`Unknown option: ${arg}`);
+    }
+
+    if (parsed.outputPath) {
+      throw new Error(`Unexpected positional argument: ${arg}`);
+    }
+
+    parsed.outputPath = arg;
+  }
+
+  return parsed;
+}
+
+export function buildPrViewArgs(prSelector) {
+  return prSelector
+    ? ["pr", "view", prSelector, "--json", PR_JSON_FIELDS]
+    : ["pr", "view", "--json", PR_JSON_FIELDS];
+}
+
+export function buildPrDiffArgs(prSelector) {
+  return prSelector ? ["pr", "diff", prSelector, "--patch"] : ["pr", "diff", "--patch"];
 }
 
 export function validatePreparedSession(session) {
@@ -73,23 +126,17 @@ export function validatePreparedSession(session) {
 
 export async function main(argv = process.argv) {
   const { buildSessionFromGhPr } = await import("../app/server/gh.ts");
-  const pr = JSON.parse(
-    gh([
-      "pr",
-      "view",
-      "--json",
-      "number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
-    ]),
-  );
-  const diff = gh(["pr", "diff", "--patch"]);
+  const { outputPath, prSelector } = parsePrepareSessionArgs(argv);
+  const pr = JSON.parse(gh(buildPrViewArgs(prSelector)));
+  const diff = gh(buildPrDiffArgs(prSelector));
   const session = validatePreparedSession(buildSessionFromGhPr(pr, diff));
 
   const scriptDir = dirname(fileURLToPath(import.meta.url));
   const skillDir = dirname(scriptDir);
-  const outputPath = argv[2] ? resolve(argv[2]) : resolve(skillDir, "session.json");
+  const resolvedOutputPath = outputPath ? resolve(outputPath) : resolve(skillDir, "session.json");
 
-  writeFileSync(outputPath, JSON.stringify(session, null, 2));
-  console.log(outputPath);
+  writeFileSync(resolvedOutputPath, JSON.stringify(session, null, 2));
+  console.log(resolvedOutputPath);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
