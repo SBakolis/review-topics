@@ -64,4 +64,65 @@ export class SessionStore {
     );
     return operation;
   }
+
+  async setFileViewed(path: string, viewed: boolean) {
+    const operation = this.writeQueue.then(async () => {
+      const session = this.get();
+      const set = new Set(session.viewedFiles);
+      if (viewed) {
+        set.add(path);
+      } else {
+        set.delete(path);
+      }
+      session.viewedFiles = [...set];
+      await writeFile(this.path, JSON.stringify(session, null, 2));
+      return session;
+    });
+
+    this.writeQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
+  }
+
+  async setFileCollapsed(path: string, collapsed: boolean) {
+    const operation = this.writeQueue.then(async () => {
+      const session = this.get();
+      const set = new Set(session.collapsedFiles);
+      if (collapsed) {
+        set.add(path);
+      } else {
+        set.delete(path);
+      }
+      session.collapsedFiles = [...set];
+      await writeFile(this.path, JSON.stringify(session, null, 2));
+      return session;
+    });
+
+    this.writeQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
+  }
+
+  async syncViewedFilesFromGithub(viewedPaths: string[]) {
+    const operation = this.writeQueue.then(async () => {
+      const session = this.get();
+      const set = new Set(session.viewedFiles);
+      for (const path of viewedPaths) {
+        set.add(path);
+      }
+      session.viewedFiles = [...set];
+      await writeFile(this.path, JSON.stringify(session, null, 2));
+      return session;
+    });
+
+    this.writeQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
+    return operation;
+  }
 }

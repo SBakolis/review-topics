@@ -17,6 +17,7 @@ function validSession(overrides: Partial<ReviewSession> = {}): ReviewSession {
       headRefName: "feature",
       baseSha: "base456",
       headSha: "abc123",
+      nodeId: "PR_node1",
     },
     files: [
       { path: "src/app.ts", status: "modified", additions: 3, deletions: 1 },
@@ -32,6 +33,8 @@ function validSession(overrides: Partial<ReviewSession> = {}): ReviewSession {
       },
     ],
     comments: [],
+    viewedFiles: [],
+    collapsedFiles: [],
     ...overrides,
   };
 }
@@ -120,6 +123,99 @@ describe("SessionStore", () => {
     expect(written.comments.map((comment: ReviewComment) => comment.id)).toEqual(
       comments.map((comment) => comment.id),
     );
+  });
+
+  it("adds a file to viewedFiles via setFileViewed", async () => {
+    const path = await writeSession(validSession());
+    const store = new SessionStore(path);
+    await store.load();
+
+    await store.setFileViewed("src/app.ts", true);
+
+    const written = JSON.parse(await readFile(path, "utf8"));
+    expect(written.viewedFiles).toEqual(["src/app.ts"]);
+    expect(store.get().viewedFiles).toEqual(["src/app.ts"]);
+  });
+
+  it("removes a file from viewedFiles via setFileViewed", async () => {
+    const path = await writeSession(validSession({ viewedFiles: ["src/app.ts", "src/other.ts"] }));
+    const store = new SessionStore(path);
+    await store.load();
+
+    await store.setFileViewed("src/app.ts", false);
+
+    const written = JSON.parse(await readFile(path, "utf8"));
+    expect(written.viewedFiles).toEqual(["src/other.ts"]);
+  });
+
+  it("does not duplicate a file when marking viewed twice", async () => {
+    const path = await writeSession(validSession({ viewedFiles: ["src/app.ts"] }));
+    const store = new SessionStore(path);
+    await store.load();
+
+    await store.setFileViewed("src/app.ts", true);
+
+    expect(store.get().viewedFiles).toEqual(["src/app.ts"]);
+  });
+
+  it("adds a file to collapsedFiles via setFileCollapsed", async () => {
+    const path = await writeSession(validSession());
+    const store = new SessionStore(path);
+    await store.load();
+
+    await store.setFileCollapsed("src/app.ts", true);
+
+    const written = JSON.parse(await readFile(path, "utf8"));
+    expect(written.collapsedFiles).toEqual(["src/app.ts"]);
+  });
+
+  it("removes a file from collapsedFiles via setFileCollapsed", async () => {
+    const path = await writeSession(validSession({ collapsedFiles: ["src/app.ts"] }));
+    const store = new SessionStore(path);
+    await store.load();
+
+    await store.setFileCollapsed("src/app.ts", false);
+
+    expect(store.get().collapsedFiles).toEqual([]);
+  });
+
+  it("merges GitHub viewed files into local via syncViewedFilesFromGithub without removing local entries", async () => {
+    const path = await writeSession(
+      validSession({ viewedFiles: ["src/local.ts"] }),
+    );
+    const store = new SessionStore(path);
+    await store.load();
+
+    await store.syncViewedFilesFromGithub(["src/local.ts", "src/remote.ts"]);
+
+    const written = JSON.parse(await readFile(path, "utf8"));
+    expect(written.viewedFiles.sort()).toEqual(["src/local.ts", "src/remote.ts"]);
+  });
+
+  it("does not remove locally-unviewed files when syncing from GitHub", async () => {
+    const path = await writeSession(validSession({ viewedFiles: ["src/local.ts"] }));
+    const store = new SessionStore(path);
+    await store.load();
+
+    await store.syncViewedFilesFromGithub([]);
+
+    expect(store.get().viewedFiles).toEqual(["src/local.ts"]);
+  });
+
+  it("serializes viewed-file writes with the existing write queue", async () => {
+    const path = await writeSession(validSession());
+    const store = new SessionStore(path);
+    await store.load();
+
+    await Promise.all([
+      store.setFileViewed("src/a.ts", true),
+      store.setFileViewed("src/b.ts", true),
+      store.setFileCollapsed("src/a.ts", true),
+    ]);
+
+    const written = JSON.parse(await readFile(path, "utf8"));
+    expect(written.viewedFiles.sort()).toEqual(["src/a.ts", "src/b.ts"]);
+    expect(written.collapsedFiles).toEqual(["src/a.ts"]);
   });
 });
 
