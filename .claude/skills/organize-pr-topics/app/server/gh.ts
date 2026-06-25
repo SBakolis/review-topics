@@ -14,6 +14,7 @@ export type GhPrFile = {
 };
 
 export type GhPr = {
+  id: string;
   number: number;
   title: string;
   url: string;
@@ -36,7 +37,7 @@ export async function getCurrentPr() {
     "pr",
     "view",
     "--json",
-    "number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
+    "id,number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
   ]);
   return JSON.parse(output) as GhPr;
 }
@@ -51,6 +52,10 @@ export function buildSessionFromGhPr(pr: GhPr, diff: string): ReviewSession {
 
   if (!owner || !repo) {
     throw new Error("GitHub PR JSON is missing head repository owner or name.");
+  }
+
+  if (!pr.id) {
+    throw new Error("GitHub PR JSON is missing id.");
   }
 
   if (!pr.baseRefOid) {
@@ -84,6 +89,7 @@ export function buildSessionFromGhPr(pr: GhPr, diff: string): ReviewSession {
       headRefName: pr.headRefName,
       baseSha: pr.baseRefOid,
       headSha: pr.headRefOid,
+      nodeId: pr.id,
     },
     files,
     diff,
@@ -98,5 +104,46 @@ export function buildSessionFromGhPr(pr: GhPr, diff: string): ReviewSession {
       },
     ],
     comments: [],
+    viewedFiles: [],
+    collapsedFiles: [],
   };
+}
+
+export type GhGraphQLRunner = (args: string[]) => Promise<string>;
+
+export async function fetchViewerViewedFiles(
+  prNodeId: string,
+  runner: GhGraphQLRunner = runGh,
+): Promise<string[]> {
+  const query =
+    "query($id: ID!) { node(id: $id) { ... on PullRequest { files(first: 100) { nodes { path viewerViewedState } } } } }";
+  const stdout = await runner(["api", "graphql", "-f", `query=${query}`, "-F", `id=${prNodeId}`]);
+  const payload = JSON.parse(stdout) as {
+    data?: { node?: { files?: { nodes?: Array<{ path: string; viewerViewedState: string }> } } };
+  };
+
+  const nodes = payload.data?.node?.files?.nodes ?? [];
+  return nodes.filter((node) => node.viewerViewedState === "VIEWED").map((node) => node.path);
+}
+
+export async function markFileViewed(
+  prNodeId: string,
+  path: string,
+  runner: GhGraphQLRunner = runGh,
+): Promise<void> {
+  const query =
+    "mutation($input: MarkFileAsViewedInput!) { markFileAsViewed(input: $input) { clientMutationId } }";
+  const input = JSON.stringify({ pullRequestId: prNodeId, path });
+  await runner(["api", "graphql", "-f", `query=${query}`, "-F", `input=${input}`]);
+}
+
+export async function unmarkFileViewed(
+  prNodeId: string,
+  path: string,
+  runner: GhGraphQLRunner = runGh,
+): Promise<void> {
+  const query =
+    "mutation($input: UnmarkFileAsViewedInput!) { unmarkFileAsViewed(input: $input) { clientMutationId } }";
+  const input = JSON.stringify({ pullRequestId: prNodeId, path });
+  await runner(["api", "graphql", "-f", `query=${query}`, "-F", `input=${input}`]);
 }
