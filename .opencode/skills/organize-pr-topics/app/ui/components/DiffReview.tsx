@@ -109,13 +109,20 @@ function FileCard({ file, rows, theme, topicId, onCommentSaved }: FileCardProps)
             const isActive =
               activeTarget?.line === row.line && activeTarget?.side === row.side;
             const tokens = highlightedRows[index] ?? highlightPlainText(row.content);
+            const toggleCommentComposer = () => {
+              setActiveTarget(isActive ? null : { line: row.line, side: row.side });
+            };
             return (
               <div className="diff-row-group" key={`${row.side}:${row.line}:${index}`}>
                 <div
                   className={`diff-row${isActive ? " selected" : ""}`}
-                  onClick={() =>
-                    setActiveTarget(isActive ? null : { line: row.line, side: row.side })
-                  }
+                  onClick={toggleCommentComposer}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      toggleCommentComposer();
+                    }
+                  }}
                   role="button"
                   tabIndex={0}
                 >
