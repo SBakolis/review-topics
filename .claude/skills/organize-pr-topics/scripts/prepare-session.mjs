@@ -14,6 +14,7 @@ const PrInfoSchema = z.object({
   headRefName: z.string().min(1),
   baseSha: z.string().min(1),
   headSha: z.string().min(1),
+  nodeId: z.string().min(1),
 });
 
 const PrFileSchema = z.object({
@@ -51,10 +52,12 @@ const ReviewSessionSchema = z.object({
   diff: z.string(),
   topics: z.array(ReviewTopicSchema).min(1),
   comments: z.array(ReviewCommentSchema),
+  viewedFiles: z.array(z.string().min(1)).default([]),
+  collapsedFiles: z.array(z.string().min(1)).default([]),
 });
 
 const PR_JSON_FIELDS =
-  "number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository";
+  "id,number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository";
 
 function gh(args) {
   return execFileSync("gh", args, { encoding: "utf8" }).trim();

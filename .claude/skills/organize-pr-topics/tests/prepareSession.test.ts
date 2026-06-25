@@ -33,6 +33,7 @@ vi.mock("../app/server/gh.ts", () => ({
       headRefName: "feature",
       baseSha: "base-sha",
       headSha: "head-sha",
+      nodeId: "PR_node1",
     },
     files: [],
     diff,
@@ -46,6 +47,8 @@ vi.mock("../app/server/gh.ts", () => ({
       },
     ],
     comments: [],
+    viewedFiles: [],
+    collapsedFiles: [],
   }),
 }));
 
@@ -91,7 +94,7 @@ describe("PR gh args", () => {
       "pr",
       "view",
       "--json",
-      "number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
+      "id,number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
     ]);
     expect(buildPrDiffArgs()).toEqual(["pr", "diff", "--patch"]);
   });
@@ -102,7 +105,7 @@ describe("PR gh args", () => {
       "view",
       "123",
       "--json",
-      "number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
+      "id,number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
     ]);
     expect(buildPrDiffArgs("123")).toEqual(["pr", "diff", "123", "--patch"]);
   });
@@ -140,7 +143,7 @@ describe("main", () => {
         "view",
         "123",
         "--json",
-        "number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
+        "id,number,title,url,baseRefName,headRefName,baseRefOid,headRefOid,files,headRepositoryOwner,headRepository",
       ],
       { encoding: "utf8" },
     );
