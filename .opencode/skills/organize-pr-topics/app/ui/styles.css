@@ -1,7 +1,33 @@
 :root {
   color-scheme: light;
+  --background: #f6f8fa;
   --surface: #ffffff;
+  --surface-muted: #f6f8fa;
   --border: #d0d7de;
+  --text: #24292f;
+  --muted-text: #57606a;
+  --subtle-text: #6e7781;
+  --accent: #0969da;
+  --hover: #f3f4f6;
+  --selected: #ddf4ff;
+  --danger: #cf222e;
+  --success: #1a7f37;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0d1117;
+  --surface: #161b22;
+  --surface-muted: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted-text: #8b949e;
+  --subtle-text: #7d8590;
+  --accent: #58a6ff;
+  --hover: #262c36;
+  --selected: #1f6feb33;
+  --danger: #ff7b72;
+  --success: #7ee787;
 }
 
 * {
@@ -10,15 +36,15 @@
 
 body {
   margin: 0;
-  color: #24292f;
-  background: #f6f8fa;
+  color: var(--text);
+  background: var(--background);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
     Arial, sans-serif;
   line-height: 1.5;
 }
 
 a {
-  color: #0969da;
+  color: var(--accent);
   text-decoration: none;
 }
 
@@ -29,7 +55,7 @@ a:hover {
 .loading {
   padding: 48px 24px;
   font-size: 16px;
-  color: #57606a;
+  color: var(--muted-text);
 }
 
 .app-header {
@@ -59,8 +85,8 @@ a:hover {
 }
 
 .topic-sidebar {
-  background: #ffffff;
-  border-right: 1px solid #d0d7de;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   padding: 16px;
   overflow-y: auto;
 }
@@ -69,7 +95,7 @@ a:hover {
   font-size: 14px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #57606a;
+  color: var(--muted-text);
   margin: 0 0 12px;
 }
 
@@ -80,8 +106,8 @@ a:hover {
   margin-bottom: 8px;
   padding: 12px;
   text-align: left;
-  background: #ffffff;
-  border: 1px solid #d0d7de;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   font: inherit;
@@ -89,12 +115,12 @@ a:hover {
 }
 
 .topic-item:hover {
-  background: #f6f8fa;
+  background: var(--surface-muted);
 }
 
 .topic-item.selected {
-  border-color: #0969da;
-  box-shadow: inset 3px 0 0 #0969da;
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .topic-title {
@@ -103,7 +129,7 @@ a:hover {
 
 .topic-meta {
   font-size: 12px;
-  color: #57606a;
+  color: var(--muted-text);
 }
 
 .review-main {
@@ -119,7 +145,7 @@ a:hover {
 
 .topic-summary {
   margin: 0 0 16px;
-  color: #57606a;
+  color: var(--muted-text);
 }
 
 .diff-review {
@@ -129,8 +155,8 @@ a:hover {
 .file-card {
   margin: 16px 0;
   overflow: hidden;
-  background: #ffffff;
-  border: 1px solid #d0d7de;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 6px;
 }
 
@@ -139,8 +165,8 @@ a:hover {
   font-weight: 600;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 13px;
-  background: #f6f8fa;
-  border-bottom: 1px solid #d0d7de;
+  background: var(--surface-muted);
+  border-bottom: 1px solid var(--border);
   word-break: break-all;
 }
 
@@ -151,7 +177,7 @@ a:hover {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 12px;
   line-height: 1.5;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .diff-row-group {
@@ -169,15 +195,15 @@ a:hover {
 }
 
 .diff-row:hover {
-  background: #f6f8fa;
+  background: var(--surface-muted);
 }
 
 .diff-row.selected {
-  background: #ddf4ff;
+  background: var(--selected);
 }
 
 .diff-line-number {
-  color: #6e7781;
+  color: var(--subtle-text);
   text-align: right;
   padding-right: 8px;
   user-select: none;
@@ -188,15 +214,15 @@ a:hover {
 }
 
 .diff-sign-add {
-  color: #1a7f37;
+  color: var(--success);
 }
 
 .diff-sign-del {
-  color: #cf222e;
+  color: var(--danger);
 }
 
 .diff-sign-context {
-  color: #6e7781;
+  color: var(--subtle-text);
 }
 
 .diff-content {
@@ -207,14 +233,14 @@ a:hover {
 .file-diff-empty {
   margin: 0;
   padding: 12px;
-  color: #57606a;
+  color: var(--muted-text);
   font-size: 13px;
 }
 
 .composer-label {
   font-size: 12px;
   font-weight: 600;
-  color: #57606a;
+  color: var(--muted-text);
 }
 
 
@@ -223,15 +249,15 @@ a:hover {
   display: grid;
   gap: 8px;
   padding: 12px;
-  border-top: 1px solid #d0d7de;
-  background: #f6f8fa;
+  border-top: 1px solid var(--border);
+  background: var(--surface-muted);
 }
 
 .handoff-panel {
   margin-top: 24px;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .handoff-panel h2 {
@@ -244,34 +270,34 @@ textarea {
   min-height: 96px;
   font: inherit;
   padding: 8px;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: #ffffff;
-  color: #24292f;
+  background: var(--surface);
+  color: var(--text);
   resize: vertical;
 }
 
 textarea[readOnly] {
-  background: #f6f8fa;
-  color: #24292f;
+  background: var(--surface-muted);
+  color: var(--text);
 }
 
 button {
   font: inherit;
   padding: 6px 14px;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: #ffffff;
-  color: #24292f;
+  background: var(--surface);
+  color: var(--text);
   cursor: pointer;
 }
 
 button:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--hover);
 }
 
 button:disabled {
-  color: #8c959f;
+  color: var(--subtle-text);
   cursor: not-allowed;
 }
 
@@ -282,6 +308,6 @@ button:disabled {
 }
 
 .comment-error {
-  color: #cf222e;
+  color: var(--danger);
   font-size: 12px;
 }
