@@ -9,7 +9,12 @@ import {
 
 const originalWindow = globalThis.window;
 
-function setMockWindow(options: { stored?: string | null; prefersDark?: boolean }) {
+function setMockWindow(options: {
+  readThrows?: boolean;
+  stored?: string | null;
+  prefersDark?: boolean;
+  writeThrows?: boolean;
+}) {
   const store = new Map<string, string>();
   if (options.stored !== undefined && options.stored !== null) {
     store.set(THEME_STORAGE_KEY, options.stored);
@@ -19,8 +24,16 @@ function setMockWindow(options: { stored?: string | null; prefersDark?: boolean 
     configurable: true,
     value: {
       localStorage: {
-        getItem: vi.fn((key: string) => store.get(key) ?? null),
+        getItem: vi.fn((key: string) => {
+          if (options.readThrows) {
+            throw new Error("storage unavailable");
+          }
+          return store.get(key) ?? null;
+        }),
         setItem: vi.fn((key: string, value: string) => {
+          if (options.writeThrows) {
+            throw new Error("storage unavailable");
+          }
           store.set(key, value);
         }),
       },
@@ -72,11 +85,24 @@ describe("theme preference helpers", () => {
     expect(getInitialTheme()).toBe("light");
   });
 
+  it("falls back when stored theme cannot be read", () => {
+    setMockWindow({ readThrows: true, prefersDark: true });
+
+    expect(readStoredTheme()).toBeNull();
+    expect(getInitialTheme()).toBe("dark");
+  });
+
   it("persists the selected theme", () => {
     setMockWindow({ prefersDark: false });
 
     writeStoredTheme("dark");
 
     expect(window.localStorage.setItem).toHaveBeenCalledWith(THEME_STORAGE_KEY, "dark");
+  });
+
+  it("does not throw when stored theme cannot be written", () => {
+    setMockWindow({ writeThrows: true });
+
+    expect(() => writeStoredTheme("dark")).not.toThrow();
   });
 });

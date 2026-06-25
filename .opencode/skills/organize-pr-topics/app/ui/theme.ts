@@ -11,12 +11,20 @@ export function readStoredTheme(): Theme | null {
     return null;
   }
 
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  return isTheme(stored) ? stored : null;
+  try {
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return isTheme(stored) ? stored : null;
+  } catch {
+    return null;
+  }
 }
 
 export function writeStoredTheme(theme: Theme) {
-  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch {
+    // Storage can be blocked by browser privacy settings; theme toggle should still work in memory.
+  }
 }
 
 export function getPreferredTheme(): Theme {
