@@ -67,8 +67,14 @@ export function App() {
             #{session.pr.number} on GitHub
           </a>
         </div>
-        <button className="theme-toggle" onClick={toggleTheme} type="button">
-          {theme === "dark" ? "Light theme" : "Dark theme"}
+        <button
+          aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          type="button"
+        >
+          <span aria-hidden="true">{theme === "dark" ? "☾" : "☀︎"}</span>
         </button>
       </header>
       <div className="review-layout">
