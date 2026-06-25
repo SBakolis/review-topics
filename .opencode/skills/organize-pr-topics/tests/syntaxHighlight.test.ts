@@ -59,3 +59,11 @@ describe("highlight fallbacks", () => {
     expect(shikiThemeForAppTheme("dark")).toBe("github-dark");
   });
 });
+
+describe("highlightLine", () => {
+  it("returns highlighted tokens for supported languages", async () => {
+    const tokens = await highlightLine("const value = 1;", "ts", "light");
+
+    expect(tokens.some((token) => token.color)).toBe(true);
+  });
+});
