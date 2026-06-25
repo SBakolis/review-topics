@@ -230,6 +230,10 @@ a:hover {
   word-break: break-word;
 }
 
+.syntax-token {
+  white-space: inherit;
+}
+
 .file-diff-empty {
   margin: 0;
   padding: 12px;

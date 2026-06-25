@@ -81,7 +81,7 @@ export function App() {
         <section className="review-main">
           <h2>{topic.title}</h2>
           <p className="topic-summary">{topic.summary}</p>
-          <DiffReview session={session} topic={topic} onCommentSaved={loadSession} />
+          <DiffReview session={session} theme={theme} topic={topic} onCommentSaved={loadSession} />
           <HandoffPanel />
         </section>
       </div>
