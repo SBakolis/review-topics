@@ -6,6 +6,66 @@ test("package test harness runs", () => {
   expect(true).toBe(true);
 });
 
+test("opencode package manifest is publishable with a global cli", () => {
+  const packageRoot = process.cwd();
+  const packageJson = JSON.parse(
+    readFileSync(resolve(packageRoot, "package.json"), "utf8"),
+  );
+
+  expect(packageJson.name).toBe("@sbakolis/organize-pr-topics");
+  expect(packageJson.version).toMatch(/^\d+\.\d+\.\d+$/);
+  expect(packageJson.private).toBe(false);
+  expect(packageJson.bin).toEqual({
+    "organize-pr-topics": "./bin/organize-pr-topics.mjs",
+  });
+  expect(packageJson.files).toEqual([
+    "bin",
+    "dist",
+    "scripts",
+    "templates",
+    "skill",
+    "README.md",
+    "LICENSE",
+  ]);
+  expect(packageJson.scripts["build:ui"]).toBe("vite build");
+  expect(packageJson.scripts["build:server"]).toContain("tsup");
+  expect(packageJson.scripts.prepack).toBe(
+    "npm run typecheck && npm test && npm run build",
+  );
+});
+
+test("opencode package includes publishable skill instructions", () => {
+  const packageRoot = process.cwd();
+  const skillPath = resolve(packageRoot, "skill/SKILL.md");
+
+  expect(existsSync(skillPath)).toBe(true);
+
+  const skill = readFileSync(skillPath, "utf8");
+  expect(skill).toContain("name: organize-pr-topics");
+  expect(skill).toContain('package: "@sbakolis/organize-pr-topics"');
+  expect(skill).toContain("organize-pr-topics check-gh");
+  expect(skill).toContain(
+    "organize-pr-topics prepare-session .pr-topic-review-session.json",
+  );
+  expect(skill).toContain(
+    "organize-pr-topics start-review .pr-topic-review-session.json",
+  );
+  expect(skill).not.toContain("npm run dev");
+  expect(skill).not.toContain("scripts/start-review.mjs");
+});
+
+test("legacy start-review script launches the production server directly", () => {
+  const packageRoot = process.cwd();
+  const script = readFileSync(resolve(packageRoot, "scripts/start-review.mjs"), "utf8");
+
+  expect(script).not.toContain('spawn("npm"');
+  expect(script).not.toContain('["run", "dev"]');
+  expect(script).not.toContain("npm run dev");
+  expect(script).toContain("dist/server/index.mjs");
+  expect(script).toContain('NODE_ENV: "production"');
+  expect(script).toContain("PR_TOPIC_SESSION_PATH");
+});
+
 test("claude code package includes required skill files", () => {
   const packageRoot = resolve(process.cwd(), "../../..", ".claude/skills/organize-pr-topics");
   const requiredFiles = [

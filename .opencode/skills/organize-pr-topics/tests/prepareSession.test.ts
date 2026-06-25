@@ -21,34 +21,6 @@ vi.mock("node:fs", async (importOriginal) => ({
   writeFileSync: mocks.writeFileSync,
 }));
 
-vi.mock("../app/server/gh.ts", () => ({
-  buildSessionFromGhPr: (pr: { number: number; title: string; url: string }, diff: string) => ({
-    pr: {
-      owner: "owner",
-      repo: "repo",
-      number: pr.number,
-      title: pr.title,
-      url: pr.url,
-      baseRefName: "main",
-      headRefName: "feature",
-      baseSha: "base-sha",
-      headSha: "head-sha",
-    },
-    files: [],
-    diff,
-    topics: [
-      {
-        id: "topic-1",
-        title: "Topic",
-        summary: "Summary",
-        rationale: "Rationale",
-        files: ["file.ts"],
-      },
-    ],
-    comments: [],
-  }),
-}));
-
 beforeEach(() => {
   mocks.execFileSync.mockReset();
   mocks.writeFileSync.mockReset();
@@ -120,6 +92,20 @@ describe("main", () => {
           number: 123,
           title: "PR title",
           url: "https://github.com/owner/repo/pull/123",
+          baseRefName: "main",
+          headRefName: "feature",
+          baseRefOid: "base-sha",
+          headRefOid: "head-sha",
+          files: [
+            {
+              path: "file.ts",
+              status: "MODIFIED",
+              additions: 1,
+              deletions: 0,
+            },
+          ],
+          headRepositoryOwner: { login: "owner" },
+          headRepository: { name: "repo" },
         });
       }
 

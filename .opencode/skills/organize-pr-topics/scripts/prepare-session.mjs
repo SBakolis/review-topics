@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { z } from "zod";
 
 const PrInfoSchema = z.object({
@@ -124,16 +124,71 @@ export function validatePreparedSession(session) {
   return result.data;
 }
 
+export function buildSessionFromGhPr(pr, diff) {
+  const owner = pr.headRepositoryOwner?.login;
+  const repo = pr.headRepository?.name;
+
+  if (!owner || !repo) {
+    throw new Error("GitHub PR JSON is missing head repository owner or name.");
+  }
+
+  if (!pr.baseRefOid) {
+    throw new Error("GitHub PR JSON is missing baseRefOid.");
+  }
+
+  const files = pr.files.map((file) => {
+    const rawStatus = file.status ?? file.changeType ?? "modified";
+    const normalized = {
+      path: file.path,
+      status: rawStatus.toLowerCase(),
+      additions: file.additions,
+      deletions: file.deletions,
+    };
+
+    if (file.previousPath) {
+      normalized.previousPath = file.previousPath;
+    }
+
+    return normalized;
+  });
+
+  return {
+    pr: {
+      owner,
+      repo,
+      number: pr.number,
+      title: pr.title,
+      url: pr.url,
+      baseRefName: pr.baseRefName,
+      headRefName: pr.headRefName,
+      baseSha: pr.baseRefOid,
+      headSha: pr.headRefOid,
+    },
+    files,
+    diff,
+    topics: [
+      {
+        id: "review-topic-1",
+        title: "PR changes",
+        summary:
+          "Initial generated topic containing all changed files. The agent should replace this with purpose-based topics.",
+        rationale: "Fallback topic created by the session script.",
+        files: files.map((file) => file.path),
+      },
+    ],
+    comments: [],
+  };
+}
+
 export async function main(argv = process.argv) {
-  const { buildSessionFromGhPr } = await import("../app/server/gh.ts");
   const { outputPath, prSelector } = parsePrepareSessionArgs(argv);
   const pr = JSON.parse(gh(buildPrViewArgs(prSelector)));
   const diff = gh(buildPrDiffArgs(prSelector));
   const session = validatePreparedSession(buildSessionFromGhPr(pr, diff));
 
-  const scriptDir = dirname(fileURLToPath(import.meta.url));
-  const skillDir = dirname(scriptDir);
-  const resolvedOutputPath = outputPath ? resolve(outputPath) : resolve(skillDir, "session.json");
+  const resolvedOutputPath = outputPath
+    ? resolve(outputPath)
+    : resolve(".pr-topic-review-session.json");
 
   writeFileSync(resolvedOutputPath, JSON.stringify(session, null, 2));
   console.log(resolvedOutputPath);

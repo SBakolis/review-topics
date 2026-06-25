@@ -9,21 +9,26 @@ This agent skill organizes the current GitHub PR into agent-proposed topics and 
 - GitHub CLI (`gh`)
 - An authenticated GitHub CLI session (`gh auth login`)
 
-## Project-Local Use
+## For Users
 
-For Claude Code, place this package at:
+Install the CLI globally and install the opencode skill:
 
-```text
-.claude/skills/organize-pr-topics
+```bash
+npm install -g @sbakolis/organize-pr-topics
+organize-pr-topics install-skill
 ```
 
-For opencode, place this package at:
+Restart opencode after installing the skill. Then ask opencode to organize a GitHub PR into review topics, or invoke the installed skill naturally from a PR branch.
 
-```text
-.opencode/skills/organize-pr-topics
+The installed skill uses these global commands:
+
+```bash
+organize-pr-topics check-gh
+organize-pr-topics prepare-session .pr-topic-review-session.json
+organize-pr-topics start-review .pr-topic-review-session.json
 ```
 
-Restart the agent after adding this skill. Agents load skills at startup.
+No user should need to clone this repository, enter the package directory, run `npm install`, or run `npm run dev`.
 
 ## Usage
 
@@ -43,7 +48,28 @@ Direct PR number fast path:
 
 Natural-language invocation remains supported: ask the agent to organize a GitHub PR into review topics and launch the review GUI.
 
-## Global Install
+## For Development
+
+Contributor setup from this package directory:
+
+```bash
+npm install
+npm run dev
+npm run build
+npm test
+```
+
+`npm run dev` starts the TypeScript server with Vite middleware for local development only. Published users run the prebuilt production server through `organize-pr-topics start-review`.
+
+Useful contributor commands:
+
+```bash
+npm run check-gh
+npm run prepare-session -- .pr-topic-review-session.json
+PR_TOPIC_SESSION_PATH=.pr-topic-review-session.json npm run dev
+```
+
+## Project-Local Development Install
 
 For Claude Code, copy this directory to:
 
