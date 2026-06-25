@@ -10,6 +10,7 @@ export const PrInfoSchema = z.object({
   headRefName: z.string().min(1),
   baseSha: z.string().min(1),
   headSha: z.string().min(1),
+  nodeId: z.string().min(1),
 });
 
 export const PrFileSchema = z.object({
@@ -47,6 +48,8 @@ export const ReviewSessionSchema = z.object({
   diff: z.string(),
   topics: z.array(ReviewTopicSchema).min(1),
   comments: z.array(ReviewCommentSchema),
+  viewedFiles: z.array(z.string().min(1)).default([]),
+  collapsedFiles: z.array(z.string().min(1)).default([]),
 });
 
 export type PrInfo = z.infer<typeof PrInfoSchema>;
