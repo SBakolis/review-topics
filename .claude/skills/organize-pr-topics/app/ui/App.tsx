@@ -87,7 +87,52 @@ export function App() {
         <section className="review-main">
           <h2>{topic.title}</h2>
           <p className="topic-summary">{topic.summary}</p>
-          <DiffReview session={session} theme={theme} topic={topic} onCommentSaved={loadSession} />
+          <DiffReview
+            session={session}
+            theme={theme}
+            topic={topic}
+            viewedFiles={session.viewedFiles}
+            collapsedFiles={session.collapsedFiles}
+            onToggleViewed={(path, viewed) => {
+              fetch("/api/files/viewed", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path, viewed }),
+              })
+                .then((response) => {
+                  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                  if (viewed) {
+                    return fetch("/api/files/collapsed", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ path, collapsed: true }),
+                    });
+                  }
+                })
+                .then((response) => {
+                  if (response && !response.ok) throw new Error(`HTTP ${response.status}`);
+                })
+                .then(() => loadSession())
+                .catch((err) => {
+                  setError(err instanceof Error ? err.message : String(err));
+                });
+            }}
+            onToggleCollapsed={(path, collapsed) => {
+              fetch("/api/files/collapsed", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path, collapsed }),
+              })
+                .then((response) => {
+                  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                })
+                .then(() => loadSession())
+                .catch((err) => {
+                  setError(err instanceof Error ? err.message : String(err));
+                });
+            }}
+            onCommentSaved={loadSession}
+          />
           <HandoffPanel />
         </section>
       </div>

@@ -14,6 +14,10 @@ type Props = {
   session: ReviewSession;
   theme: Theme;
   topic: ReviewTopic;
+  viewedFiles: string[];
+  collapsedFiles: string[];
+  onToggleViewed: (path: string, viewed: boolean) => void;
+  onToggleCollapsed: (path: string, collapsed: boolean) => void;
   onCommentSaved: () => void;
 };
 
@@ -28,7 +32,16 @@ function signForRow(row: DiffCommentTarget): string {
   return " ";
 }
 
-export function DiffReview({ session, theme, topic, onCommentSaved }: Props) {
+export function DiffReview({
+  session,
+  theme,
+  topic,
+  viewedFiles,
+  collapsedFiles,
+  onToggleViewed,
+  onToggleCollapsed,
+  onCommentSaved,
+}: Props) {
   const rowsByFile = topic.files.reduce<Record<string, DiffCommentTarget[]>>(
     (acc, file) => {
       acc[file] = [];
@@ -52,6 +65,10 @@ export function DiffReview({ session, theme, topic, onCommentSaved }: Props) {
           key={file}
           theme={theme}
           topicId={topic.id}
+          viewed={viewedFiles.includes(file)}
+          collapsed={collapsedFiles.includes(file)}
+          onToggleViewed={onToggleViewed}
+          onToggleCollapsed={onToggleCollapsed}
           onCommentSaved={onCommentSaved}
         />
       ))}
@@ -64,10 +81,24 @@ type FileCardProps = {
   rows: DiffCommentTarget[];
   theme: Theme;
   topicId: string;
+  viewed: boolean;
+  collapsed: boolean;
+  onToggleViewed: (path: string, viewed: boolean) => void;
+  onToggleCollapsed: (path: string, collapsed: boolean) => void;
   onCommentSaved: () => void;
 };
 
-function FileCard({ file, rows, theme, topicId, onCommentSaved }: FileCardProps) {
+function FileCard({
+  file,
+  rows,
+  theme,
+  topicId,
+  viewed,
+  collapsed,
+  onToggleViewed,
+  onToggleCollapsed,
+  onCommentSaved,
+}: FileCardProps) {
   const [activeTarget, setActiveTarget] = useState<LineTarget | null>(null);
   const [highlightedRows, setHighlightedRows] = useState<Record<number, HighlightToken[]>>({});
 
@@ -98,10 +129,57 @@ function FileCard({ file, rows, theme, topicId, onCommentSaved }: FileCardProps)
     };
   }, [file, rows, theme]);
 
+  const toggleCollapse = () => {
+    onToggleCollapsed(file, !collapsed);
+  };
+
+  const handleHeaderKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleCollapse();
+    }
+  };
+
+  const toggleViewed = () => {
+    onToggleViewed(file, !viewed);
+  };
+
+  const handleViewedKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleViewed();
+    }
+  };
+
   return (
     <section className="file-card">
-      <header className="file-card-header">{file}</header>
-      {rows.length === 0 ? (
+      <header
+        className={`file-card-header${viewed ? " viewed" : ""}`}
+        onClick={toggleCollapse}
+        onKeyDown={handleHeaderKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-expanded={!collapsed}
+      >
+        <span className="file-chevron" aria-hidden="true">
+          {collapsed ? "▶" : "▼"}
+        </span>
+        <span className="file-path">{file}</span>
+        <button
+          className={`file-viewed-toggle${viewed ? " checked" : ""}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleViewed();
+          }}
+          onKeyDown={handleViewedKeyDown}
+          type="button"
+          aria-pressed={viewed}
+        >
+          {viewed ? "✓ Viewed" : "Viewed"}
+        </button>
+      </header>
+      {collapsed ? null : rows.length === 0 ? (
         <p className="file-diff-empty">No diff available for {file}.</p>
       ) : (
         <div className="file-diff">
