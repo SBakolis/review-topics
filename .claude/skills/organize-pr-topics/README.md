@@ -25,7 +25,23 @@ For opencode, place this package at:
 
 Restart the agent after adding this skill. Agents load skills at startup.
 
-Ask the agent to organize the current PR into topics and launch the review GUI.
+## Usage
+
+Preferred command:
+
+```text
+/review-topics
+```
+
+With no arguments, the command asks which PR to review. It offers the most recent open PR for the checked-out branch when one exists. If no checked-out branch PR exists, it asks for a PR number or offers recent open PRs.
+
+Direct PR number fast path:
+
+```text
+/review-topics <pr-number>
+```
+
+Natural-language invocation remains supported: ask the agent to organize a GitHub PR into review topics and launch the review GUI.
 
 ## Global Install
 
