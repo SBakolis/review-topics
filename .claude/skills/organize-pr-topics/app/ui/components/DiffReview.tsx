@@ -144,14 +144,6 @@ function FileCard({
     onToggleViewed(file, !viewed);
   };
 
-  const handleViewedKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      event.stopPropagation();
-      toggleViewed();
-    }
-  };
-
   return (
     <section className="file-card">
       <header
@@ -166,18 +158,20 @@ function FileCard({
           {collapsed ? "▶" : "▼"}
         </span>
         <span className="file-path">{file}</span>
-        <button
+        <label
           className={`file-viewed-toggle${viewed ? " checked" : ""}`}
           onClick={(event) => {
             event.stopPropagation();
-            toggleViewed();
           }}
-          onKeyDown={handleViewedKeyDown}
-          type="button"
-          aria-pressed={viewed}
         >
-          {viewed ? "✓ Viewed" : "Viewed"}
-        </button>
+          <input
+            type="checkbox"
+            checked={viewed}
+            onChange={toggleViewed}
+            onClick={(event) => event.stopPropagation()}
+          />
+          Viewed
+        </label>
       </header>
       {collapsed ? null : rows.length === 0 ? (
         <p className="file-diff-empty">No diff available for {file}.</p>

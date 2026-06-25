@@ -220,24 +220,24 @@ a:hover {
 
 .file-viewed-toggle {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--muted-text);
   cursor: pointer;
   flex-shrink: 0;
+  color: var(--muted-text);
+  user-select: none;
+}
+
+.file-viewed-toggle input {
+  margin: 0;
+  cursor: pointer;
 }
 
 .file-viewed-toggle.checked {
   color: var(--success);
-  border-color: var(--success);
-}
-
-.file-viewed-toggle:hover:not(.checked) {
-  background: var(--hover);
 }
 
 .file-diff {
