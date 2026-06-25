@@ -24,9 +24,13 @@ function setMockWindow(options: { stored?: string | null; prefersDark?: boolean 
           store.set(key, value);
         }),
       },
-      matchMedia: vi.fn((query: string) => ({
-        matches: query === "(prefers-color-scheme: dark)" ? Boolean(options.prefersDark) : false,
-      })),
+      ...(options.prefersDark === undefined
+        ? {}
+        : {
+            matchMedia: vi.fn((query: string) => ({
+              matches: query === "(prefers-color-scheme: dark)" ? options.prefersDark : false,
+            })),
+          }),
     },
   });
 }
@@ -62,7 +66,7 @@ describe("theme preference helpers", () => {
   });
 
   it("falls back to light when system dark preference is unavailable", () => {
-    setMockWindow({ prefersDark: false });
+    setMockWindow({});
 
     expect(getPreferredTheme()).toBe("light");
     expect(getInitialTheme()).toBe("light");
