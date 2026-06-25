@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "check-gh": "node scripts/check-gh.mjs",
-    "prepare-session": "node scripts/prepare-session.mjs",
-    "dev": "tsx app/server/index.ts",
+    "prepare-session": "node --import tsx scripts/prepare-session.mjs",
+    "dev": "node --import tsx app/server/index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "build": "vite build"

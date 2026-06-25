@@ -1,6 +1,5 @@
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
-import { register } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
@@ -73,7 +72,6 @@ export function validatePreparedSession(session) {
 }
 
 export async function main(argv = process.argv) {
-  register("tsx/esm", import.meta.url);
   const { buildSessionFromGhPr } = await import("../app/server/gh.ts");
   const pr = JSON.parse(
     gh([

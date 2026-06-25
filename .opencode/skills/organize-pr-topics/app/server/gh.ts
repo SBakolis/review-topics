@@ -7,7 +7,8 @@ const execFileAsync = promisify(execFile);
 export type GhPrFile = {
   path: string;
   previousPath?: string;
-  status: string;
+  changeType?: string;
+  status?: string;
   additions: number;
   deletions: number;
 };
@@ -57,9 +58,10 @@ export function buildSessionFromGhPr(pr: GhPr, diff: string): ReviewSession {
   }
 
   const files = pr.files.map((file): PrFile => {
+    const rawStatus = file.status ?? file.changeType ?? "modified";
     const normalized: PrFile = {
       path: file.path,
-      status: file.status.toLowerCase(),
+      status: rawStatus.toLowerCase(),
       additions: file.additions,
       deletions: file.deletions,
     };
