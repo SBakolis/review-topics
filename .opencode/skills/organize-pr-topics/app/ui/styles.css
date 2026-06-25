@@ -44,13 +44,15 @@ a:hover {
 .review-layout {
   display: grid;
   grid-template-columns: 280px 1fr;
-  min-height: calc(100vh - 73px);
+  height: calc(100vh - 73px);
+  overflow: hidden;
 }
 
 .topic-sidebar {
   background: #ffffff;
   border-right: 1px solid #d0d7de;
   padding: 16px;
+  overflow-y: auto;
 }
 
 .topic-sidebar h2 {
@@ -97,6 +99,7 @@ a:hover {
 .review-main {
   padding: 24px;
   min-width: 0;
+  overflow-y: auto;
 }
 
 .review-main h2 {
