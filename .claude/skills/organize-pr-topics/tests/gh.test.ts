@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildSessionFromGhPr } from "../app/server/gh";
+import { buildSessionFromGhPr, type GhPr } from "../app/server/gh";
 import { ReviewSessionSchema } from "../app/shared/schema";
 
 describe("buildSessionFromGhPr", () => {
@@ -163,7 +163,7 @@ describe("buildSessionFromGhPr nodeId threading", () => {
           headRepositoryOwner: { login: "octo" },
           headRepository: { name: "example" },
           files: [{ path: "src/app.ts", status: "MODIFIED", additions: 12, deletions: 3 }],
-        },
+        } as Partial<GhPr> as GhPr,
         "diff --git a/src/app.ts b/src/app.ts",
       ),
     ).toThrow("GitHub PR JSON is missing id.");

@@ -18,6 +18,7 @@ import {
       headRefName: "feature",
       headSha: "abc123",
       baseSha: "base456",
+      nodeId: "PR_node1",
     },
     files: [{ path: "src/app.ts", status: "modified", additions: 3, deletions: 1 }],
     diff: "diff --git a/src/app.ts b/src/app.ts",
@@ -31,6 +32,8 @@ import {
       },
     ],
     comments: [],
+    viewedFiles: [],
+    collapsedFiles: [],
     ...overrides,
   };
 }
@@ -166,6 +169,9 @@ describe("POST /api/comments/post-all", () => {
         if (idx >= 0) session.comments[idx] = { ...session.comments[idx], ...updates };
         return session.comments[idx];
       }),
+      setFileViewed: vi.fn(),
+      setFileCollapsed: vi.fn(),
+      syncViewedFilesFromGithub: vi.fn(),
     };
 
     const postInline = vi.fn().mockResolvedValue({
@@ -177,7 +183,7 @@ describe("POST /api/comments/post-all", () => {
       html_url: "https://github.com/octo/example/issues/12#issuecomment-99",
     });
 
-    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr });
+    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr, markFileViewed: vi.fn(), unmarkFileViewed: vi.fn() });
 
     const response = await app.inject({ method: "POST", url: "/api/comments/post-all" });
 
@@ -238,12 +244,15 @@ describe("POST /api/comments/post-all", () => {
         if (idx >= 0) session.comments[idx] = { ...session.comments[idx], ...updates };
         return session.comments[idx];
       }),
+      setFileViewed: vi.fn(),
+      setFileCollapsed: vi.fn(),
+      syncViewedFilesFromGithub: vi.fn(),
     };
 
     const postInline = vi.fn().mockRejectedValue(new Error("422 Unprocessable Entity"));
     const postPr = vi.fn();
 
-    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr });
+    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr, markFileViewed: vi.fn(), unmarkFileViewed: vi.fn() });
 
     const response = await app.inject({ method: "POST", url: "/api/comments/post-all" });
 
@@ -274,12 +283,15 @@ describe("POST /api/comments/post-all", () => {
       get: () => session,
       addComment: vi.fn(),
       updateComment: vi.fn(),
+      setFileViewed: vi.fn(),
+      setFileCollapsed: vi.fn(),
+      syncViewedFilesFromGithub: vi.fn(),
     };
 
     const postInline = vi.fn();
     const postPr = vi.fn();
 
-    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr });
+    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr, markFileViewed: vi.fn(), unmarkFileViewed: vi.fn() });
 
     const response = await app.inject({ method: "POST", url: "/api/comments/post-all" });
 
@@ -324,6 +336,9 @@ describe("POST /api/comments/post-all", () => {
         if (idx >= 0) session.comments[idx] = { ...session.comments[idx], ...updates };
         return session.comments[idx];
       }),
+      setFileViewed: vi.fn(),
+      setFileCollapsed: vi.fn(),
+      syncViewedFilesFromGithub: vi.fn(),
     };
 
     const postInline = vi.fn().mockResolvedValue({
@@ -332,7 +347,7 @@ describe("POST /api/comments/post-all", () => {
     });
     const postPr = vi.fn();
 
-    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr });
+    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr, markFileViewed: vi.fn(), unmarkFileViewed: vi.fn() });
 
     const response = await app.inject({ method: "POST", url: "/api/comments/post-all" });
 
@@ -382,6 +397,9 @@ describe("POST /api/comments/post-all", () => {
         if (idx >= 0) session.comments[idx] = { ...session.comments[idx], ...updates };
         return session.comments[idx];
       }),
+      setFileViewed: vi.fn(),
+      setFileCollapsed: vi.fn(),
+      syncViewedFilesFromGithub: vi.fn(),
     };
 
     const postInline = vi.fn();
@@ -390,7 +408,7 @@ describe("POST /api/comments/post-all", () => {
       .mockResolvedValueOnce({ html_url: "https://github.com/octo/example/issues/12#c1" })
       .mockRejectedValueOnce(new Error("500 Server Error"));
 
-    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr });
+    const app = buildServer(store, {}, { postInlineComment: postInline, postPrLevelComment: postPr, markFileViewed: vi.fn(), unmarkFileViewed: vi.fn() });
 
     const response = await app.inject({ method: "POST", url: "/api/comments/post-all" });
 
@@ -429,6 +447,9 @@ describe("POST /api/comments/post-all", () => {
         if (idx >= 0) session.comments[idx] = { ...session.comments[idx], ...updates };
         return session.comments[idx];
       }),
+      setFileViewed: vi.fn(),
+      setFileCollapsed: vi.fn(),
+      syncViewedFilesFromGithub: vi.fn(),
     };
 
     const postPr = vi.fn().mockResolvedValue({
@@ -441,7 +462,7 @@ describe("POST /api/comments/post-all", () => {
     const app = buildServer(
       store,
       {},
-      { postInlineComment: vi.fn(), postPrLevelComment: postPr },
+      { postInlineComment: vi.fn(), postPrLevelComment: postPr, markFileViewed: vi.fn(), unmarkFileViewed: vi.fn() },
       guard,
     );
 

@@ -11,6 +11,11 @@ import {
 } from "../shared/schema";
 import { SessionStore } from "./session";
 import {
+  fetchViewerViewedFiles,
+  markFileViewed,
+  unmarkFileViewed,
+} from "./gh";
+import {
   buildTopicCommentBody,
   postInlineComment,
   postPrLevelComment,
@@ -47,11 +52,16 @@ export interface ReviewSessionStore {
   get(): ReviewSession;
   addComment(comment: ReviewComment): Promise<ReviewComment>;
   updateComment(id: string, updates: Partial<ReviewComment>): Promise<ReviewComment>;
+  setFileViewed(path: string, viewed: boolean): Promise<ReviewSession>;
+  setFileCollapsed(path: string, collapsed: boolean): Promise<ReviewSession>;
+  syncViewedFilesFromGithub(viewedPaths: string[]): Promise<ReviewSession>;
 }
 
 export interface PostingAdapters {
   postInlineComment: typeof postInlineComment;
   postPrLevelComment: typeof postPrLevelComment;
+  markFileViewed: typeof markFileViewed;
+  unmarkFileViewed: typeof unmarkFileViewed;
 }
 
 export class PostAllGuard {
@@ -77,7 +87,12 @@ export class PostAllGuard {
 export function buildServer(
   store: ReviewSessionStore,
   options: FastifyServerOptions = {},
-  adapters: PostingAdapters = { postInlineComment, postPrLevelComment },
+  adapters: PostingAdapters = {
+    postInlineComment,
+    postPrLevelComment,
+    markFileViewed,
+    unmarkFileViewed,
+  },
   guard: PostAllGuard = new PostAllGuard(),
 ) {
   const app = Fastify(options);
@@ -194,6 +209,48 @@ export function buildServer(
     }
   });
 
+  app.post("/api/files/viewed", async (request, reply) => {
+    const body =
+      request.body && typeof request.body === "object" ? (request.body as Record<string, unknown>) : {};
+    const path = typeof body.path === "string" ? body.path : "";
+    const viewed = body.viewed === true;
+
+    const session = store.get();
+    const knownPaths = new Set(session.files.map((file) => file.path));
+    if (!path || !knownPaths.has(path)) {
+      return reply.status(400).send({ error: "Unknown file path" });
+    }
+
+    await store.setFileViewed(path, viewed);
+
+    const prNodeId = store.get().pr.nodeId;
+    void (viewed
+      ? adapters.markFileViewed(prNodeId, path)
+      : adapters.unmarkFileViewed(prNodeId, path)
+    ).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      request.log.warn({ path, message }, "Failed to sync file viewed state to GitHub");
+    });
+
+    return store.get();
+  });
+
+  app.post("/api/files/collapsed", async (request, reply) => {
+    const body =
+      request.body && typeof request.body === "object" ? (request.body as Record<string, unknown>) : {};
+    const path = typeof body.path === "string" ? body.path : "";
+    const collapsed = body.collapsed === true;
+
+    const session = store.get();
+    const knownPaths = new Set(session.files.map((file) => file.path));
+    if (!path || !knownPaths.has(path)) {
+      return reply.status(400).send({ error: "Unknown file path" });
+    }
+
+    await store.setFileCollapsed(path, collapsed);
+    return store.get();
+  });
+
   app.get("/api/handoff", async () => {
     const session = store.get();
     const comments = session.comments
@@ -220,6 +277,14 @@ export async function startServer() {
 
   const store = new SessionStore(sessionPath);
   await store.load();
+
+  try {
+    const viewedPaths = await fetchViewerViewedFiles(store.get().pr.nodeId);
+    await store.syncViewedFilesFromGithub(viewedPaths);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Failed to seed viewed files from GitHub: ${message}`);
+  }
 
   const app = buildServer(store, { logger: true });
   await registerUiHandler(app);

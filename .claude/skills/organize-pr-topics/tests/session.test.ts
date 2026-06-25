@@ -235,6 +235,9 @@ describe("review server routes", () => {
       },
       updateComment: async (_id: string, updates: Partial<ReviewComment>) =>
         updates as ReviewComment,
+      setFileViewed: async () => session,
+      setFileCollapsed: async () => session,
+      syncViewedFilesFromGithub: async () => session,
     });
 
     const response = await app.inject({ method: "GET", url: "/api/session" });
@@ -250,6 +253,9 @@ describe("review server routes", () => {
       addComment: async (comment: ReviewComment) => comment,
       updateComment: async (_id: string, updates: Partial<ReviewComment>) =>
         updates as ReviewComment,
+      setFileViewed: async () => validSession(),
+      setFileCollapsed: async () => validSession(),
+      syncViewedFilesFromGithub: async () => validSession(),
     });
 
     const response = await app.inject({
