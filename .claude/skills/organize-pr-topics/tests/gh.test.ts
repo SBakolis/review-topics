@@ -236,7 +236,9 @@ describe("markFileViewed", () => {
       "-f",
       "query=mutation($input: MarkFileAsViewedInput!) { markFileAsViewed(input: $input) { clientMutationId } }",
       "-F",
-      "input={\"pullRequestId\":\"PR_kwDOABC123\",\"path\":\"src/app.ts\"}",
+      "input[pullRequestId]=PR_kwDOABC123",
+      "-F",
+      "input[path]=src/app.ts",
     ]);
   });
 
@@ -244,6 +246,20 @@ describe("markFileViewed", () => {
     const { markFileViewed } = await import("../app/server/gh");
     const runner = vi.fn().mockRejectedValue(new Error("network"));
     await expect(markFileViewed("PR_kwDOABC123", "src/app.ts", runner)).rejects.toThrow("network");
+  });
+
+  it("throws when GraphQL response contains errors", async () => {
+    const { markFileViewed } = await import("../app/server/gh");
+    const runner = vi.fn().mockResolvedValue(
+      JSON.stringify({
+        data: { markFileAsViewed: null },
+        errors: [{ message: "Filepath must be part of pull request" }],
+      }),
+    );
+
+    await expect(
+      markFileViewed("PR_kwDOABC123", "src/app.ts", runner),
+    ).rejects.toThrow("Filepath must be part of pull request");
   });
 });
 
@@ -261,7 +277,23 @@ describe("unmarkFileViewed", () => {
       "-f",
       "query=mutation($input: UnmarkFileAsViewedInput!) { unmarkFileAsViewed(input: $input) { clientMutationId } }",
       "-F",
-      "input={\"pullRequestId\":\"PR_kwDOABC123\",\"path\":\"src/app.ts\"}",
+      "input[pullRequestId]=PR_kwDOABC123",
+      "-F",
+      "input[path]=src/app.ts",
     ]);
+  });
+
+  it("throws when GraphQL response contains errors", async () => {
+    const { unmarkFileViewed } = await import("../app/server/gh");
+    const runner = vi.fn().mockResolvedValue(
+      JSON.stringify({
+        data: { unmarkFileAsViewed: null },
+        errors: [{ message: "Filepath must be part of pull request" }],
+      }),
+    );
+
+    await expect(
+      unmarkFileViewed("PR_kwDOABC123", "src/app.ts", runner),
+    ).rejects.toThrow("Filepath must be part of pull request");
   });
 });

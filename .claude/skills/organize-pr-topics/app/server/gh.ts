@@ -133,8 +133,20 @@ export async function markFileViewed(
 ): Promise<void> {
   const query =
     "mutation($input: MarkFileAsViewedInput!) { markFileAsViewed(input: $input) { clientMutationId } }";
-  const input = JSON.stringify({ pullRequestId: prNodeId, path });
-  await runner(["api", "graphql", "-f", `query=${query}`, "-F", `input=${input}`]);
+  const stdout = await runner([
+    "api",
+    "graphql",
+    "-f",
+    `query=${query}`,
+    "-F",
+    `input[pullRequestId]=${prNodeId}`,
+    "-F",
+    `input[path]=${path}`,
+  ]);
+  const payload = JSON.parse(stdout) as { data?: unknown; errors?: Array<{ message: string }> };
+  if (payload.errors) {
+    throw new Error(payload.errors.map((e) => e.message).join("; "));
+  }
 }
 
 export async function unmarkFileViewed(
@@ -144,6 +156,18 @@ export async function unmarkFileViewed(
 ): Promise<void> {
   const query =
     "mutation($input: UnmarkFileAsViewedInput!) { unmarkFileAsViewed(input: $input) { clientMutationId } }";
-  const input = JSON.stringify({ pullRequestId: prNodeId, path });
-  await runner(["api", "graphql", "-f", `query=${query}`, "-F", `input=${input}`]);
+  const stdout = await runner([
+    "api",
+    "graphql",
+    "-f",
+    `query=${query}`,
+    "-F",
+    `input[pullRequestId]=${prNodeId}`,
+    "-F",
+    `input[path]=${path}`,
+  ]);
+  const payload = JSON.parse(stdout) as { data?: unknown; errors?: Array<{ message: string }> };
+  if (payload.errors) {
+    throw new Error(payload.errors.map((e) => e.message).join("; "));
+  }
 }
