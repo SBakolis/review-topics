@@ -99,6 +99,11 @@ test("install-skill can install only the opencode skill", () => {
 
 test("install-skill rejects invalid agent values", () => {
   const home = mkdtempSync(resolve(tmpdir(), "organize-pr-topics-home-"));
+  const claudePath = resolve(home, ".claude/skills/organize-pr-topics/SKILL.md");
+  const opencodePath = resolve(
+    home,
+    ".config/opencode/skills/organize-pr-topics/SKILL.md",
+  );
   const result = spawnSync(
     process.execPath,
     [cliPath, "install-skill", "--agent", "vim"],
@@ -112,6 +117,8 @@ test("install-skill rejects invalid agent values", () => {
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("Invalid agent: vim");
   expect(result.stderr).toContain("--agent claude|opencode|both");
+  expect(existsSync(claudePath)).toBe(false);
+  expect(existsSync(opencodePath)).toBe(false);
 });
 
 test("start-review requires an existing session path", () => {
