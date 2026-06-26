@@ -36,22 +36,41 @@ test("opencode package manifest is publishable with a global cli", () => {
 
 test("opencode package includes publishable skill instructions", () => {
   const packageRoot = process.cwd();
-  const skillPath = resolve(packageRoot, "skill/SKILL.md");
+  const bundledSkills = [
+    {
+      path: "skill/claude/SKILL.md",
+      extraAssertions: [] as string[],
+    },
+    {
+      path: "skill/opencode/SKILL.md",
+      extraAssertions: [
+        "compatibility: opencode",
+        'package: "@sbakolis/organize-pr-topics"',
+      ],
+    },
+  ];
 
-  expect(existsSync(skillPath)).toBe(true);
+  for (const bundledSkill of bundledSkills) {
+    const skillPath = resolve(packageRoot, bundledSkill.path);
+    expect(existsSync(skillPath), bundledSkill.path).toBe(true);
 
-  const skill = readFileSync(skillPath, "utf8");
-  expect(skill).toContain("name: organize-pr-topics");
-  expect(skill).toContain('package: "@sbakolis/organize-pr-topics"');
-  expect(skill).toContain("organize-pr-topics check-gh");
-  expect(skill).toContain(
-    "organize-pr-topics prepare-session .pr-topic-review-session.json",
-  );
-  expect(skill).toContain(
-    "organize-pr-topics start-review .pr-topic-review-session.json",
-  );
-  expect(skill).not.toContain("npm run dev");
-  expect(skill).not.toContain("scripts/start-review.mjs");
+    const skill = readFileSync(skillPath, "utf8");
+    expect(skill).toContain("name: organize-pr-topics");
+    expect(skill).toContain("organize-pr-topics check-gh");
+    expect(skill).toContain(
+      "organize-pr-topics prepare-session .pr-topic-review-session.json",
+    );
+    expect(skill).toContain(
+      "organize-pr-topics start-review .pr-topic-review-session.json",
+    );
+    expect(skill).not.toContain("npm run dev");
+    expect(skill).not.toContain("scripts/start-review.mjs");
+    expect(skill).not.toContain('node "$SKILL_DIR');
+
+    for (const expected of bundledSkill.extraAssertions) {
+      expect(skill).toContain(expected);
+    }
+  }
 });
 
 test("legacy start-review script launches the production server directly", () => {

@@ -11,14 +11,26 @@ This agent skill organizes the current GitHub PR into agent-proposed topics and 
 
 ## For Users
 
-Install the CLI globally and install the opencode skill:
+Install the global CLI and agent skills:
 
 ```bash
 npm install -g @sbakolis/organize-pr-topics
 organize-pr-topics install-skill
 ```
 
-Restart opencode after installing the skill. Then ask opencode to organize a GitHub PR into review topics, or invoke the installed skill naturally from a PR branch.
+By default, `install-skill` installs both agent skills:
+
+- Claude Code: `~/.claude/skills/organize-pr-topics/SKILL.md`
+- opencode: `~/.config/opencode/skills/organize-pr-topics/SKILL.md`
+
+To install only one agent target, pass `--agent` explicitly:
+
+```bash
+organize-pr-topics install-skill --agent claude
+organize-pr-topics install-skill --agent opencode
+```
+
+Restart the relevant agent after installing the skill. Then ask the agent to organize a GitHub PR into review topics, or invoke the installed skill naturally from a PR branch.
 
 The installed skill uses these global commands:
 
@@ -27,8 +39,6 @@ organize-pr-topics check-gh
 organize-pr-topics prepare-session .pr-topic-review-session.json
 organize-pr-topics start-review .pr-topic-review-session.json
 ```
-
-No user should need to clone this repository, enter the package directory, run `npm install`, or run `npm run dev`.
 
 ## Usage
 
@@ -68,22 +78,6 @@ npm run check-gh
 npm run prepare-session -- .pr-topic-review-session.json
 PR_TOPIC_SESSION_PATH=.pr-topic-review-session.json npm run dev
 ```
-
-## Project-Local Development Install
-
-For Claude Code, copy this directory to:
-
-```text
-~/.claude/skills/organize-pr-topics
-```
-
-For opencode, copy this directory to:
-
-```text
-~/.config/opencode/skills/organize-pr-topics
-```
-
-Then restart the relevant agent.
 
 ## Troubleshooting
 
