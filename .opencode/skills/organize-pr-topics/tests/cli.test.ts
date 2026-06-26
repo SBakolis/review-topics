@@ -52,6 +52,21 @@ test("install-skill defaults to installing claude and opencode skills", () => {
   }
 });
 
+test("install-skill can explicitly install both claude and opencode skills", () => {
+  const home = mkdtempSync(resolve(tmpdir(), "organize-pr-topics-home-"));
+  const output = runCli(["install-skill", "--agent", "both"], { HOME: home });
+  const claudePath = resolve(home, ".claude/skills/organize-pr-topics/SKILL.md");
+  const opencodePath = resolve(
+    home,
+    ".config/opencode/skills/organize-pr-topics/SKILL.md",
+  );
+
+  expect(output).toContain(claudePath);
+  expect(output).toContain(opencodePath);
+  expect(existsSync(claudePath)).toBe(true);
+  expect(existsSync(opencodePath)).toBe(true);
+});
+
 test("install-skill can install only the claude skill", () => {
   const home = mkdtempSync(resolve(tmpdir(), "organize-pr-topics-home-"));
   const output = runCli(["install-skill", "--agent", "claude"], { HOME: home });
