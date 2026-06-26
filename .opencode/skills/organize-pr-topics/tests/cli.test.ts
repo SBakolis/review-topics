@@ -18,26 +18,83 @@ function runCli(args: string[], env: NodeJS.ProcessEnv = {}) {
 test("cli help documents supported global commands", () => {
   const output = runCli(["--help"]);
 
-  expect(output).toContain("organize-pr-topics install-skill");
+  expect(output).toContain("organize-pr-topics install-skill [--agent claude|opencode|both]");
   expect(output).toContain("organize-pr-topics check-gh");
   expect(output).toContain("organize-pr-topics prepare-session [output-path]");
   expect(output).toContain("organize-pr-topics start-review <session-path>");
 });
 
-test("install-skill copies the publishable opencode skill into the user config", () => {
+test("install-skill defaults to installing claude and opencode skills", () => {
   const home = mkdtempSync(resolve(tmpdir(), "organize-pr-topics-home-"));
   const output = runCli(["install-skill"], { HOME: home });
-  const installedPath = resolve(
+  const claudePath = resolve(home, ".claude/skills/organize-pr-topics/SKILL.md");
+  const opencodePath = resolve(
     home,
     ".config/opencode/skills/organize-pr-topics/SKILL.md",
   );
 
-  expect(output).toContain(installedPath);
-  expect(existsSync(installedPath)).toBe(true);
+  expect(output).toContain(claudePath);
+  expect(output).toContain(opencodePath);
+  expect(existsSync(claudePath)).toBe(true);
+  expect(existsSync(opencodePath)).toBe(true);
 
-  const installedSkill = readFileSync(installedPath, "utf8");
-  expect(installedSkill).toContain("organize-pr-topics check-gh");
-  expect(installedSkill).not.toContain("npm run dev");
+  for (const installedPath of [claudePath, opencodePath]) {
+    const installedSkill = readFileSync(installedPath, "utf8");
+    expect(installedSkill).toContain("organize-pr-topics check-gh");
+    expect(installedSkill).toContain(
+      "organize-pr-topics prepare-session .pr-topic-review-session.json",
+    );
+    expect(installedSkill).toContain(
+      "organize-pr-topics start-review .pr-topic-review-session.json",
+    );
+    expect(installedSkill).not.toContain("npm run dev");
+    expect(installedSkill).not.toContain("scripts/start-review.mjs");
+  }
+});
+
+test("install-skill can install only the claude skill", () => {
+  const home = mkdtempSync(resolve(tmpdir(), "organize-pr-topics-home-"));
+  const output = runCli(["install-skill", "--agent", "claude"], { HOME: home });
+  const claudePath = resolve(home, ".claude/skills/organize-pr-topics/SKILL.md");
+  const opencodePath = resolve(
+    home,
+    ".config/opencode/skills/organize-pr-topics/SKILL.md",
+  );
+
+  expect(output).toContain(claudePath);
+  expect(output).not.toContain(opencodePath);
+  expect(existsSync(claudePath)).toBe(true);
+  expect(existsSync(opencodePath)).toBe(false);
+});
+
+test("install-skill can install only the opencode skill", () => {
+  const home = mkdtempSync(resolve(tmpdir(), "organize-pr-topics-home-"));
+  const output = runCli(["install-skill", "--agent", "opencode"], { HOME: home });
+  const claudePath = resolve(home, ".claude/skills/organize-pr-topics/SKILL.md");
+  const opencodePath = resolve(
+    home,
+    ".config/opencode/skills/organize-pr-topics/SKILL.md",
+  );
+
+  expect(output).not.toContain(claudePath);
+  expect(output).toContain(opencodePath);
+  expect(existsSync(claudePath)).toBe(false);
+  expect(existsSync(opencodePath)).toBe(true);
+});
+
+test("install-skill rejects invalid agent values", () => {
+  const result = spawnSync(
+    process.execPath,
+    [cliPath, "install-skill", "--agent", "vim"],
+    {
+      cwd: tmpdir(),
+      encoding: "utf8",
+    },
+  );
+
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("Invalid agent: vim");
+  expect(result.stderr).toContain("--agent claude|opencode|both");
 });
 
 test("start-review requires an existing session path", () => {
