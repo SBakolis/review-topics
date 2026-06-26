@@ -38,6 +38,12 @@ Use this skill when the user wants to organize the current GitHub pull request i
    organize-pr-topics prepare-session .pr-topic-review-session.json
    ```
 
+   If the user provided or chose a PR selector, pass it with the supported `--pr <selector>` option when needed:
+
+   ```bash
+   organize-pr-topics prepare-session .pr-topic-review-session.json --pr <selector>
+   ```
+
 4. Read the generated session JSON.
 5. Replace or improve the fallback `topics` array with agent-proposed review topics.
 6. Write the updated session JSON.
