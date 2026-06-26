@@ -256,7 +256,7 @@ async function registerUiHandler(app: ReturnType<typeof buildServer>) {
   const fastifyStatic = await import("@fastify/static");
   const { resolve } = await import("node:path");
   await app.register(fastifyStatic.default, {
-    root: resolve(new URL("../..", import.meta.url).pathname, "dist/ui"),
+    root: resolve(new URL("../..", import.meta.url).pathname, "dist/client"),
     prefix: "/",
   });
 }

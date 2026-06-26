@@ -27,8 +27,13 @@ test("opencode package manifest is publishable with a global cli", () => {
     "README.md",
     "LICENSE",
   ]);
+  expect(packageJson.scripts.clean).toEqual(expect.any(String));
+  expect(packageJson.scripts.clean).toContain("rmSync");
   expect(packageJson.scripts["build:ui"]).toBe("vite build");
   expect(packageJson.scripts["build:server"]).toContain("tsup");
+  expect(packageJson.scripts.build).toBe(
+    "npm run clean && npm run build:ui && npm run build:server",
+  );
   expect(packageJson.scripts.prepack).toBe(
     "npm run typecheck && npm test && npm run build",
   );
@@ -83,6 +88,15 @@ test("legacy start-review script launches the production server directly", () =>
   expect(script).toContain("dist/server/index.mjs");
   expect(script).toContain('NODE_ENV: "production"');
   expect(script).toContain("PR_TOPIC_SESSION_PATH");
+});
+
+test("production build emits and serves client assets from dist/client", () => {
+  const packageRoot = process.cwd();
+  const viteConfig = readFileSync(resolve(packageRoot, "vite.config.ts"), "utf8");
+  const server = readFileSync(resolve(packageRoot, "app/server/index.ts"), "utf8");
+
+  expect(viteConfig).toContain('outDir: "../../dist/client"');
+  expect(server).toContain('"dist/client"');
 });
 
 test("claude code package includes required skill files", () => {

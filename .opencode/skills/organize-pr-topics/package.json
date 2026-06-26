@@ -21,9 +21,10 @@
     "dev": "node --import tsx app/server/index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "clean": "node -e \"import('node:fs').then(({rmSync}) => rmSync('dist', { recursive: true, force: true }))\"",
     "build:ui": "vite build",
     "build:server": "tsup --config tsup.config.ts",
-    "build": "npm run build:ui && npm run build:server",
+    "build": "npm run clean && npm run build:ui && npm run build:server",
     "prepack": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
