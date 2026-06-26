@@ -32,7 +32,13 @@ Use this skill when the user wants to organize the current GitHub pull request i
    organize-pr-topics check-gh
    ```
 
-3. Prepare the review session:
+3. Resolve which PR to review:
+
+   - If the user provided a PR selector, use it.
+   - If no selector was provided, determine the checked-out branch and offer the most recent open PR for that branch as the default when found.
+   - If no branch PR is found, ask for a PR number or offer recent open PRs.
+
+4. Prepare the review session:
 
    ```bash
    organize-pr-topics prepare-session .pr-topic-review-session.json
@@ -44,16 +50,16 @@ Use this skill when the user wants to organize the current GitHub pull request i
    organize-pr-topics prepare-session .pr-topic-review-session.json --pr <selector>
    ```
 
-4. Read the generated session JSON.
-5. Replace or improve the fallback `topics` array with agent-proposed review topics.
-6. Write the updated session JSON.
-7. Launch the GUI:
+5. Read the generated session JSON.
+6. Replace or improve the fallback `topics` array with agent-proposed review topics.
+7. Write the updated session JSON.
+8. Launch the GUI:
 
    ```bash
    organize-pr-topics start-review .pr-topic-review-session.json
    ```
 
-8. Ask the user to review and post comments from the GUI.
+9. Ask the user to review and post comments from the GUI.
 
 ## Topic Quality
 
