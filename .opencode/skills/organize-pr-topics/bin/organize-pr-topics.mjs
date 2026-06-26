@@ -13,7 +13,7 @@ const HELP = `organize-pr-topics
 
 Usage:
   organize-pr-topics --help
-  organize-pr-topics install-skill
+  organize-pr-topics install-skill [--agent claude|opencode|both]
   organize-pr-topics check-gh
   organize-pr-topics prepare-session [output-path]
   organize-pr-topics start-review <session-path>
@@ -39,17 +39,58 @@ function runNode(args, options = {}) {
   });
 }
 
-async function installSkill() {
-  const source = resolve(packageDir, "skill/SKILL.md");
-  const target = resolve(
-    homedir(),
-    ".config/opencode/skills/organize-pr-topics/SKILL.md",
-  );
+const INSTALL_USAGE = "Usage: organize-pr-topics install-skill [--agent claude|opencode|both]";
+
+const INSTALL_TARGETS = {
+  claude: {
+    source: "skill/claude/SKILL.md",
+    target: ".claude/skills/organize-pr-topics/SKILL.md",
+    restartMessage: "Restart Claude Code for the installed skill to be loaded.",
+  },
+  opencode: {
+    source: "skill/opencode/SKILL.md",
+    target: ".config/opencode/skills/organize-pr-topics/SKILL.md",
+    restartMessage: "Restart opencode for the installed skill to be loaded.",
+  },
+};
+
+function parseInstallAgent(args) {
+  if (args.length === 0) {
+    return "both";
+  }
+
+  if (args.length !== 2 || args[0] !== "--agent") {
+    console.error(INSTALL_USAGE);
+    process.exit(1);
+  }
+
+  const agent = args[1];
+  if (!["claude", "opencode", "both"].includes(agent)) {
+    console.error(`Invalid agent: ${agent}`);
+    console.error(INSTALL_USAGE);
+    process.exit(1);
+  }
+
+  return agent;
+}
+
+async function installTarget(targetConfig) {
+  const source = resolve(packageDir, targetConfig.source);
+  const target = resolve(homedir(), targetConfig.target);
 
   await mkdir(dirname(target), { recursive: true });
   await copyFile(source, target);
   console.log(`Installed organize-pr-topics skill to ${target}`);
-  console.log("Restart opencode for the installed skill to be loaded.");
+  console.log(targetConfig.restartMessage);
+}
+
+async function installSkill(args) {
+  const agent = parseInstallAgent(args);
+  const targets = agent === "both" ? ["claude", "opencode"] : [agent];
+
+  for (const target of targets) {
+    await installTarget(INSTALL_TARGETS[target]);
+  }
 }
 
 function startReview(sessionArg) {
@@ -96,7 +137,7 @@ async function main() {
   }
 
   if (command === "install-skill") {
-    await installSkill();
+    await installSkill(args);
     return;
   }
 
