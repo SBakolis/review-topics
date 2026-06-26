@@ -34,6 +34,12 @@ Use this skill when the user wants to organize the current GitHub pull request i
    organize-pr-topics prepare-session .pr-topic-review-session.json
    ```
 
+   If the user selected a PR, such as `/review-topics <pr-number>`, pass that selector with the supported `--pr <selector>` option:
+
+   ```bash
+   organize-pr-topics prepare-session .pr-topic-review-session.json --pr <selector>
+   ```
+
 4. Read the generated session JSON.
 5. Replace or improve the fallback `topics` array with agent-proposed review topics.
 6. Write the updated session JSON.
@@ -44,6 +50,13 @@ Use this skill when the user wants to organize the current GitHub pull request i
    ```
 
 8. Ask the user to review and post comments from the GUI.
+
+## Topic Quality
+
+- Topics must be proposed by the agent.
+- Group files by user-visible behavior, subsystem, or implementation purpose.
+- Keep topics small enough to review independently.
+- Include a short rationale for why each file belongs in the topic.
 
 ## Safety
 
