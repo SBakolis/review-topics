@@ -83,12 +83,14 @@ test("install-skill can install only the opencode skill", () => {
 });
 
 test("install-skill rejects invalid agent values", () => {
+  const home = mkdtempSync(resolve(tmpdir(), "organize-pr-topics-home-"));
   const result = spawnSync(
     process.execPath,
     [cliPath, "install-skill", "--agent", "vim"],
     {
       cwd: tmpdir(),
       encoding: "utf8",
+      env: { ...process.env, HOME: home },
     },
   );
 
