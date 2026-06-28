@@ -19,8 +19,10 @@ Use this skill when the user wants to organize the current GitHub pull request i
 
    ```bash
    npm install -g @sbakolis/organize-pr-topics
-   organize-pr-topics install-skill --agent claude
+   organize-pr-topics install-skill
    ```
+
+   The installer detects `~/.claude` and `~/.config/opencode` and asks which agent skill to install. For a Claude-only non-interactive install, use `organize-pr-topics install-skill --agent claude`.
 
 2. Verify GitHub CLI access:
 

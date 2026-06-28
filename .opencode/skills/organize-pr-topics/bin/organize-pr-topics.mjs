@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { copyFile, mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 
 const binDir = dirname(fileURLToPath(import.meta.url));
@@ -56,7 +57,7 @@ const INSTALL_TARGETS = {
 
 function parseInstallAgent(args) {
   if (args.length === 0) {
-    return "both";
+    return null;
   }
 
   if (args.length !== 2 || args[0] !== "--agent") {
@@ -74,6 +75,79 @@ function parseInstallAgent(args) {
   return agent;
 }
 
+function detectAgents(home = homedir()) {
+  return {
+    claude: existsSync(resolve(home, ".claude")),
+    opencode: existsSync(resolve(home, ".config/opencode")),
+  };
+}
+
+function printDetectedAgents(detected) {
+  console.error(`Detected Claude Code: ${detected.claude ? "yes" : "no"}`);
+  console.error(`Detected opencode: ${detected.opencode ? "yes" : "no"}`);
+}
+
+function createPromptStreams() {
+  return {
+    read: async (prompt) => {
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      try {
+        return await rl.question(prompt);
+      } finally {
+        rl.close();
+      }
+    },
+    write: (text) => process.stdout.write(text),
+  };
+}
+
+async function promptForAgents(detected, streams) {
+  if (detected.claude && detected.opencode) {
+    streams.write("Detected Claude Code and opencode.\n");
+    const answer = (await streams.read(
+      "Install organize-pr-topics skill into [1] Claude Code, [2] opencode, [3] both? [3] ",
+    )).trim().toLowerCase();
+
+    if (answer === "" || answer === "3" || answer === "both") {
+      return "both";
+    }
+    if (answer === "1" || answer === "claude") {
+      return "claude";
+    }
+    if (answer === "2" || answer === "opencode") {
+      return "opencode";
+    }
+
+    throw new Error("Invalid selection. Choose 1, 2, 3, claude, opencode, or both.");
+  }
+
+  if (detected.claude) {
+    streams.write("Detected Claude Code only.\n");
+    const answer = (await streams.read("Install into Claude Code? [Y/n] ")).trim().toLowerCase();
+    if (answer === "" || answer === "y" || answer === "yes") {
+      return "claude";
+    }
+    if (answer === "n" || answer === "no") {
+      throw new Error("Installation cancelled.");
+    }
+    throw new Error("Invalid selection. Choose y or n.");
+  }
+
+  if (detected.opencode) {
+    streams.write("Detected opencode only.\n");
+    const answer = (await streams.read("Install into opencode? [Y/n] ")).trim().toLowerCase();
+    if (answer === "" || answer === "y" || answer === "yes") {
+      return "opencode";
+    }
+    if (answer === "n" || answer === "no") {
+      throw new Error("Installation cancelled.");
+    }
+    throw new Error("Invalid selection. Choose y or n.");
+  }
+
+  throw new Error("No supported agents detected.");
+}
+
 async function installTarget(targetConfig) {
   const source = resolve(packageDir, targetConfig.source);
   const target = resolve(homedir(), targetConfig.target);
@@ -85,7 +159,29 @@ async function installTarget(targetConfig) {
 }
 
 async function installSkill(args) {
-  const agent = parseInstallAgent(args);
+  let agent = parseInstallAgent(args);
+
+  if (!agent) {
+    const detected = detectAgents();
+
+    if (!detected.claude && !detected.opencode) {
+      console.error("No supported agents detected.");
+      printDetectedAgents(detected);
+      console.error(INSTALL_USAGE);
+      console.error("Install Claude Code or opencode first, or pass --agent claude|opencode|both to install explicitly.");
+      process.exit(1);
+    }
+
+    if (!process.stdin.isTTY || !process.stdout.isTTY) {
+      printDetectedAgents(detected);
+      console.error(INSTALL_USAGE);
+      console.error("Re-run in an interactive terminal or pass --agent claude|opencode|both.");
+      process.exit(1);
+    }
+
+    agent = await promptForAgents(detected, createPromptStreams());
+  }
+
   const targets = agent === "both" ? ["claude", "opencode"] : [agent];
 
   for (const target of targets) {
@@ -163,7 +259,19 @@ async function main() {
   process.exit(1);
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-});
+function isCliEntryPoint() {
+  if (!process.argv[1]) {
+    return false;
+  }
+
+  return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+}
+
+if (isCliEntryPoint()) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}
+
+export { promptForAgents };

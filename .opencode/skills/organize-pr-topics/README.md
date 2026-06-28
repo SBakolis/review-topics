@@ -11,23 +11,26 @@ This agent skill organizes the current GitHub PR into agent-proposed topics and 
 
 ## For Users
 
-Install the global CLI and agent skills:
+Install the global CLI, then run the skill installer:
 
 ```bash
 npm install -g @sbakolis/organize-pr-topics
 organize-pr-topics install-skill
 ```
 
-By default, `install-skill` installs both agent skills:
+By default, `install-skill` detects available agent config directories and asks where to install the skill:
 
 - Claude Code: `~/.claude/skills/organize-pr-topics/SKILL.md`
 - opencode: `~/.config/opencode/skills/organize-pr-topics/SKILL.md`
 
-To install only one agent target, pass `--agent` explicitly:
+If both `~/.claude` and `~/.config/opencode` exist, the interactive installer lets you choose Claude Code, opencode, or both. If only one is detected, it asks for confirmation before installing into that agent. In non-interactive shells, pass `--agent` explicitly.
+
+To install a specific target without prompting, pass `--agent` explicitly:
 
 ```bash
 organize-pr-topics install-skill --agent claude
 organize-pr-topics install-skill --agent opencode
+organize-pr-topics install-skill --agent both
 ```
 
 Restart the relevant agent after installing the skill. Then ask the agent to organize a GitHub PR into review topics, or invoke the installed skill naturally from a PR branch.

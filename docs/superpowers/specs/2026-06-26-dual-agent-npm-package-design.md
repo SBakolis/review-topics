@@ -29,12 +29,19 @@ organize-pr-topics install-skill --agent claude
 organize-pr-topics install-skill --agent opencode
 ```
 
-`install-skill` defaults to `both`. It writes:
+When `--agent` is provided, `install-skill` skips detection and writes the requested target(s):
 
 - Claude Code: `~/.claude/skills/organize-pr-topics/SKILL.md`
 - opencode: `~/.config/opencode/skills/organize-pr-topics/SKILL.md`
 
 Invalid `--agent` values fail with a clear usage error.
+
+Without `--agent`, the installer detects available agents by directory presence:
+
+- Claude Code: `~/.claude`
+- opencode: `~/.config/opencode`
+
+If run in an interactive terminal and at least one agent is detected, it prompts for the install target. If both agents are detected, empty Enter defaults to `both`; if one agent is detected, empty Enter confirms that agent. If run non-interactively or no supported agent directories are detected, it exits with guidance to install an agent first or pass `--agent claude|opencode|both` explicitly.
 
 ## Package Layout
 
@@ -58,7 +65,8 @@ The opencode skill can keep opencode-specific metadata. The Claude skill can kee
 Update CLI and package tests to cover:
 
 - Help documents the `--agent` installer option.
-- Default install writes both Claude and opencode skill files.
+- Default install detects available agents and prompts in interactive terminals.
+- Non-interactive default install exits with `--agent` guidance.
 - Targeted install writes only the requested agent skill file.
 - Installed skills reference global CLI commands.
 - Installed skills do not reference `npm run dev` or source-tree script execution.
