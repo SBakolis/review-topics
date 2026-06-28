@@ -1,7 +1,7 @@
 node_modules/
-.opencode/skills/organize-pr-topics/node_modules/
-.opencode/skills/organize-pr-topics/dist/
-.opencode/skills/organize-pr-topics/session.json
+packages/organize-pr-topics/node_modules/
+packages/organize-pr-topics/dist/
+packages/organize-pr-topics/session.json
 .claude/skills/organize-pr-topics/node_modules/
 .claude/skills/organize-pr-topics/dist/
 .claude/skills/organize-pr-topics/session.json

@@ -20,7 +20,7 @@ For Claude Code, place this package at:
 For opencode, place this package at:
 
 ```text
-.opencode/skills/organize-pr-topics
+packages/organize-pr-topics
 ```
 
 Restart the agent after adding this skill. Agents load skills at startup.

@@ -45,6 +45,8 @@ If run in an interactive terminal and at least one agent is detected, it prompts
 
 ## Package Layout
 
+The publishable npm package source lives at `packages/organize-pr-topics`. Agent install destinations stay agent-specific, but the package itself is not owned by either `.opencode` or `.claude`.
+
 The package will bundle agent-specific skill files:
 
 - `skill/claude/SKILL.md`
