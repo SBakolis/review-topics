@@ -11,12 +11,14 @@ This agent skill organizes the current GitHub PR into agent-proposed topics and 
 
 ## For Users
 
-Install the global CLI, then run the skill installer:
+Install the global CLI, then run the skill installer with `npx`:
 
 ```bash
 npm install -g @sbakolis/organize-pr-topics
-organize-pr-topics install-skill
+npx @sbakolis/organize-pr-topics install-skill
 ```
+
+The direct `organize-pr-topics ...` command also works when npm's global bin directory is on your `PATH`. The `npx` form avoids shell `command not found` errors when that directory is not configured.
 
 By default, `install-skill` detects available agent config directories and asks where to install the skill:
 
@@ -28,19 +30,19 @@ If both `~/.claude` and `~/.config/opencode` exist, the interactive installer le
 To install a specific target without prompting, pass `--agent` explicitly:
 
 ```bash
-organize-pr-topics install-skill --agent claude
-organize-pr-topics install-skill --agent opencode
-organize-pr-topics install-skill --agent both
+npx @sbakolis/organize-pr-topics install-skill --agent claude
+npx @sbakolis/organize-pr-topics install-skill --agent opencode
+npx @sbakolis/organize-pr-topics install-skill --agent both
 ```
 
 Restart the relevant agent after installing the skill. Then ask the agent to organize a GitHub PR into review topics, or invoke the installed skill naturally from a PR branch.
 
-The installed skill uses these global commands:
+The installed skill uses these package commands:
 
 ```bash
-organize-pr-topics check-gh
-organize-pr-topics prepare-session .pr-topic-review-session.json
-organize-pr-topics start-review .pr-topic-review-session.json
+npx @sbakolis/organize-pr-topics check-gh
+npx @sbakolis/organize-pr-topics prepare-session .pr-topic-review-session.json
+npx @sbakolis/organize-pr-topics start-review .pr-topic-review-session.json
 ```
 
 ## Usage
@@ -72,7 +74,7 @@ npm run build
 npm test
 ```
 
-`npm run dev` starts the TypeScript server with Vite middleware for local development only. Published users run the prebuilt production server through `organize-pr-topics start-review`.
+`npm run dev` starts the TypeScript server with Vite middleware for local development only. Published users run the prebuilt production server through `npx @sbakolis/organize-pr-topics start-review`.
 
 Useful contributor commands:
 
