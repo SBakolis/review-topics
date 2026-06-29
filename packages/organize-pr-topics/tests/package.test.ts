@@ -89,6 +89,13 @@ test("opencode package includes publishable skill instructions", () => {
     expect(skill).toContain(
       "organize-pr-topics start-review .pr-topic-review-session.json",
     );
+    expect(skill).toContain("open http://127.0.0.1:4173");
+    expect(skill).toContain("xdg-open http://127.0.0.1:4173");
+    expect(skill).toContain("start http://127.0.0.1:4173");
+    expect(skill).toContain("Check whether the GUI is already running");
+    expect(skill).toContain("stop the existing GUI process");
+    expect(skill).toContain("fresh session JSON for the selected PR only");
+    expect(skill).toContain("Do not preserve topics, comments, viewed files, or collapsed file state");
     expect(skill).not.toContain("npm run dev");
     expect(skill).not.toContain("scripts/start-review.mjs");
     expect(skill).not.toContain('node "$SKILL_DIR');

@@ -40,7 +40,7 @@ Use this skill when the user wants to organize the current GitHub pull request i
    - If no selector was provided, determine the checked-out branch and offer the most recent open PR for that branch as the default when found.
    - If no branch PR is found, ask for a PR number or offer recent open PRs.
 
-4. Prepare the review session:
+4. Prepare a fresh review session for the selected PR:
 
    ```bash
    organize-pr-topics prepare-session .pr-topic-review-session.json
@@ -52,16 +52,31 @@ Use this skill when the user wants to organize the current GitHub pull request i
    organize-pr-topics prepare-session .pr-topic-review-session.json --pr <selector>
    ```
 
+   The generated file must be a fresh session JSON for the selected PR only. Do not reuse a previous session file as a source for topics or review state.
+
 5. Read the generated session JSON.
-6. Replace or improve the fallback `topics` array with agent-proposed review topics.
+6. Replace the fallback `topics` array with agent-proposed review topics based only on files changed by the selected PR. Do not preserve topics, comments, viewed files, or collapsed file state from an earlier session.
 7. Write the updated session JSON.
-8. Launch the GUI:
+8. Check whether the GUI is already running. If it is, stop the existing GUI process before launching the new session so stale topics are not shown.
+9. Launch the GUI and open it in the user's default browser:
 
    ```bash
    organize-pr-topics start-review .pr-topic-review-session.json
    ```
 
-9. Ask the user to review and post comments from the GUI.
+   If the shell waits on long-running commands, run the server as a background process and keep it running for the review session. Wait until the server output shows the local review URL. The default URL is `http://127.0.0.1:4173`.
+
+   Open the URL with the user's operating system default-browser command:
+
+   ```bash
+   open http://127.0.0.1:4173
+   xdg-open http://127.0.0.1:4173
+   start http://127.0.0.1:4173
+   ```
+
+   Use `open` on macOS, `xdg-open` on Linux, and `start` on Windows. If opening the browser fails, tell the user the URL and ask them to open it manually.
+
+10. Ask the user to review and post comments from the GUI.
 
 ## Topic Quality
 
